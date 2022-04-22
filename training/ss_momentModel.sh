@@ -9,7 +9,6 @@
 #$ -pe omp 8
 #$ -l mem_per_core=8G
 
-
 module load miniconda/4.9.2
 conda activate sccIMU
 
