@@ -1,9 +1,6 @@
-DATASET/
-logs/
-my_model/
-SCALER/
-SavedModel/
-
-# qlog 파일 제외
-angle.*
-moment.*
+modeltraining/DATASET/
+modeltraining/logs/
+modeltraining/my_model/
+modeltraining/SCALER/
+modeltraining/SavedModel/
+modeltraining/result_qsub/
