@@ -154,10 +154,10 @@ scalerDir  = 'SCALER'
 # 준비된 K-fold data iterations
 time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-
+SaveModelDir = 'SavedModel'
 # shutil.rmtree('./logs', ignore_errors=True) # 삭제는 신중ㅎ히
 # tensorboard 동작시키는 법 : tensorboard --logdir logs/fit
-
+modelVersion = 'Dense_1st'
 goal = 'angle'
 epochs = 1000
 for numFold in range(0,5): # 5-fold crossvalidation
@@ -192,4 +192,4 @@ for numFold in range(0,5): # 5-fold crossvalidation
 
     # 요건 나중에... [early_stopping,]
     history = model.fit(X_train, Y_angle_train, validation_data=(X_test,Y_angle_test), epochs=epochs, callbacks=[tensorboard_callback])
-
+    model.save(join(SaveModelDir,f'{goal}_{numFold}_{modelVersion}.h5'))
