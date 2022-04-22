@@ -2,3 +2,4 @@ DATASET/
 logs/
 my_model/
 SCALER/
+SavedModel/

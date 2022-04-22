@@ -106,6 +106,7 @@ SaveModelDir = 'SavedModel'
 # tensorboard 동작시키는 법 : tensorboard --logdir logs/fit
 
 # 현재 추론 대상
+modelVersion = 'Dense_1st'
 goal = 'moment_BWHT'
 epochs = 1000
 for numFold in range(0,5): # 5-fold crossvalidation
@@ -140,3 +141,5 @@ for numFold in range(0,5): # 5-fold crossvalidation
 
     # 요건 나중에... [early_stopping,]
     history = model.fit(X_train, Y_train, validation_data=(X_test,Y_test), epochs=epochs, callbacks=[tensorboard_callback])
+    # 모델 저장하기
+    model.save(join(SaveModelDir,f'{goal}_{numFold}_{modelVersion}.h5'))
