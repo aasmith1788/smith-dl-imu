@@ -20,9 +20,6 @@ def seed_everything(seed: int = 42):
     os.environ["PYTHONHASHSEED"] = str(seed)
     tf.random.set_seed(seed)
 
-print(tf.__version__)
-print(keras.__version__)
-
 #### 설정 영역
 modelVersion = 'Dense_1st'
 nameDataset = 'IWALQQ_1st'
@@ -33,7 +30,6 @@ dataSetDir = join('DATASET',nameDataset)
 SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 # epochs
 epochs = 1000
-
 # Model 생성, compile
 def create_model():
 
@@ -153,10 +149,9 @@ def Z_Axis_RMSE_pct(y_true, y_pred):
     print(f"\nUsing {numFold} fold scaler")
     return Z_Axis_RMSE_pct
 
-
 for numFold in range(0,5): # 5-fold crossvalidation
     # 각 fold 별로 별도로 표기하기
-    log_dir = "logs/fit/" + time +'_'+ str(numFold) + '_fold_' + goal  
+    log_dir = join("logs","fit",modelVersion,nameDataset,time +'_'+ str(numFold) + '_fold_' + goal)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     print(f"Num of Fold: {numFold}")
     # 데이터 불러오기
