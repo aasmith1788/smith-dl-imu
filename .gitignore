@@ -1,6 +1,3 @@
-modeltraining/DATASET/
-modeltraining/logs/
-modeltraining/my_model/
-modeltraining/SCALER/
-modeltraining/SavedModel/
-modeltraining/result_qsub/
+training/DATASET/
+training/logs/
+training/result_qsub/

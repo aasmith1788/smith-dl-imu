@@ -37,7 +37,7 @@ epochs = 1000
 # Model 생성, compile
 def create_model():
 
-    model = tf.keras.models.Sequential([
+    model = tf.keras.Sequential([
     tf.keras.layers.InputLayer(input_shape=(4242,)),
     tf.keras.layers.Flatten(input_shape=(28, 28)),
     tf.keras.layers.Dense(6000, activation='relu'),
