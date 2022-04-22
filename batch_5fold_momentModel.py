@@ -44,8 +44,8 @@ early_stopping = EarlyStopping(monitor='val_loss',patience = patience, mode='min
 # 원래의 범위로 값 평가하기
 # 원래 정확도 복구해서 tensorboard에 기록하기
 def rescaled_RMSE_pct(y_true, y_pred):
-    y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
-    y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
+    y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))
+    y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))
     y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
     y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
