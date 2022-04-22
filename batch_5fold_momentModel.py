@@ -44,8 +44,8 @@ early_stopping = EarlyStopping(monitor='val_loss',patience = patience, mode='min
 # 원래의 범위로 값 평가하기
 # 원래 정확도 복구해서 tensorboard에 기록하기
 def rescaled_RMSE_pct(y_true, y_pred):
-    y_true = tf.reshape(tf.squeeze(y_true), [-1,3])
-    y_pred = tf.reshape(tf.squeeze(y_pred), [-1,3])
+    y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
+    y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
     y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
     y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
@@ -56,8 +56,8 @@ def rescaled_RMSE_pct(y_true, y_pred):
 
 def X_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 0
-    y_true = tf.reshape(tf.squeeze(y_true), [-1,3])[NumAxis]
-    y_pred = tf.reshape(tf.squeeze(y_pred), [-1,3])[NumAxis]
+    y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
+    y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
     print(y_true.shape)
     y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
     y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
@@ -69,8 +69,8 @@ def X_Axis_RMSE_pct(y_true, y_pred):
     
 def Y_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 1
-    y_true = tf.reshape(tf.squeeze(y_true), [-1,3])[NumAxis]
-    y_pred = tf.reshape(tf.squeeze(y_pred), [-1,3])[NumAxis]
+    y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
+    y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
     print(y_true.shape)
     y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
     y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
@@ -82,8 +82,8 @@ def Y_Axis_RMSE_pct(y_true, y_pred):
 
 def Z_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 2
-    y_true = tf.reshape(tf.squeeze(y_true), [-1,3])[NumAxis]
-    y_pred = tf.reshape(tf.squeeze(y_pred), [-1,3])[NumAxis]
+    y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
+    y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
     print(y_true.shape)
     y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
     y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
