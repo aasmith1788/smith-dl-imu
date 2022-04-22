@@ -43,6 +43,7 @@ early_stopping = EarlyStopping(monitor='val_loss',patience = patience, mode='min
 
 # 원래의 범위로 값 평가하기
 # 원래 정확도 복구해서 tensorboard에 기록하기
+# 통합은 의미 없는 수치!
 def rescaled_RMSE_pct(y_true, y_pred):
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))
@@ -131,7 +132,7 @@ for numFold in range(0,5): # 5-fold crossvalidation
     model = create_model()
     model.compile(optimizer=myoptim,
               loss='mean_absolute_error',
-              metrics=[rescaled_RMSE_pct, X_Axis_RMSE_pct, Y_Axis_RMSE_pct, Z_Axis_RMSE_pct])
+              metrics=[X_Axis_RMSE_pct, Y_Axis_RMSE_pct, Z_Axis_RMSE_pct])
     # 차원 축소
     X_train = np.squeeze(load_train["final_X_train"], axis=2)
     Y_train = np.squeeze(load_train["final_Y_moBHWT_train"], axis=2)
