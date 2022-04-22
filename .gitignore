@@ -3,3 +3,7 @@ logs/
 my_model/
 SCALER/
 SavedModel/
+
+# qlog 파일 제외
+angle.*
+moment.*
