@@ -31,7 +31,7 @@ goal = 'moment_BWHT'
 # 데이터 셋 준비
 dataSetDir = join('DATASET',nameDataset)
 # 학습된 모델은 백업안하는 공간에서 저장하기
-SaveDir = '/restricted/projectnb/movelab/bcha/trainedModel/'
+SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 # epochs
 epochs = 1000
 # Model 생성, compile
