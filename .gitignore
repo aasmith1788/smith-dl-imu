@@ -1,3 +1,6 @@
 training/DATASET/
 training/logs/
 training/result_qsub/
+
+preperation/NORM
+preperation/SAVE_dataSet
