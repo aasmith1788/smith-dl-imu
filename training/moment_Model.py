@@ -55,8 +55,8 @@ early_stopping = EarlyStopping(monitor='val_loss',patience = patience, mode='min
 def rescaled_RMSE_pct(y_true, y_pred):
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
+    y_true = (y_true - K.constant(load_scaler4Y_moBWHT.min_)) / K.constant(load_scaler4Y_moBWHT.scale_)
+    y_pred = (y_pred - K.constant(load_scaler4Y_moBWHT.min_)) / K.constant(load_scaler4Y_moBWHT.scale_)
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     rescaled_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -67,8 +67,8 @@ def X_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 0
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
+    y_true = (y_true - K.constant(load_scaler4Y_moBWHT.min_[NumAxis])) / K.constant(load_scaler4Y_moBWHT.scale_[NumAxis])
+    y_pred = (y_pred - K.constant(load_scaler4Y_moBWHT.min_[NumAxis])) / K.constant(load_scaler4Y_moBWHT.scale_[NumAxis])
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     X_Axis_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -79,8 +79,8 @@ def Y_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 1
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
+    y_true = (y_true - K.constant(load_scaler4Y_moBWHT.min_[NumAxis])) / K.constant(load_scaler4Y_moBWHT.scale_[NumAxis])
+    y_pred = (y_pred - K.constant(load_scaler4Y_moBWHT.min_[NumAxis])) / K.constant(load_scaler4Y_moBWHT.scale_[NumAxis])
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     Y_Axis_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -91,8 +91,8 @@ def Z_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 2
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
+    y_true = (y_true - K.constant(load_scaler4Y_moBWHT.min_[NumAxis])) / K.constant(load_scaler4Y_moBWHT.scale_[NumAxis])
+    y_pred = (y_pred - K.constant(load_scaler4Y_moBWHT.min_[NumAxis])) / K.constant(load_scaler4Y_moBWHT.scale_[NumAxis])
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     Z_Axis_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -108,12 +108,12 @@ for numFold in range(0,5): # 5-fold crossvalidation
     # 모든 데이터는 scaled된 데이터임!
     load_train = np.load(join(dataSetDir,f"{numFold}_fold_final_train.npz"))
     load_test = np.load(join(dataSetDir,f"{numFold}_fold_final_test.npz"))
-    print(f'loaded Train shape: {load_train["final_X_train"].shape}, {load_train["final_Y_angle_train"].shape}, {load_train["final_Y_moBHWT_train"].shape}')
-    print(f'loaded Test shape: {load_test["final_X_test"].shape}, {load_test["final_Y_angle_test"].shape}, {load_test["final_Y_moBHWT_test"].shape}')
+    print(f'loaded Train shape: {load_train["final_X_train"].shape}, {load_train["final_Y_angle_train"].shape}, {load_train["final_Y_moBWHT_train"].shape}')
+    print(f'loaded Test shape: {load_test["final_X_test"].shape}, {load_test["final_Y_angle_test"].shape}, {load_test["final_Y_moBWHT_test"].shape}')
     # sclaer 불러오기
     # Here scaler is MinMaxScaler!
     load_scaler4X = load(open(join(dataSetDir,f"{numFold}_fold_scaler4X.pkl"), 'rb'))
-    load_scaler4Y_moBHWT = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_moBHWT.pkl"), 'rb'))
+    load_scaler4Y_moBWHT = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_moBWHT.pkl"), 'rb'))
 
     # https://wandb.ai/sauravm/Optimizers/reports/How-to-Compare-Keras-Optimizers-in-Tensorflow--VmlldzoxNjU1OTA4
     # Nadam을 선택한 이유
@@ -123,10 +123,10 @@ for numFold in range(0,5): # 5-fold crossvalidation
               metrics=[X_Axis_RMSE_pct, Y_Axis_RMSE_pct, Z_Axis_RMSE_pct])
     # 차원 축소
     X_train = np.squeeze(load_train["final_X_train"], axis=2)
-    Y_train = np.squeeze(load_train["final_Y_moBHWT_train"], axis=2)
+    Y_train = np.squeeze(load_train["final_Y_moBWHT_train"], axis=2)
 
     X_test = np.squeeze(load_test["final_X_test"], axis=2)
-    Y_test = np.squeeze(load_test["final_Y_moBHWT_test"], axis=2)
+    Y_test = np.squeeze(load_test["final_Y_moBWHT_test"], axis=2)
 
     # 요건 나중에... [early_stopping,]
     history = model.fit(X_train, Y_train, validation_data=(X_test,Y_test), epochs=epochs, callbacks=[tensorboard_callback])
