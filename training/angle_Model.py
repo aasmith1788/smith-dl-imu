@@ -25,7 +25,8 @@ modelVersion = 'Dense_1st'
 nameDataset = 'IWALQQ_1st'
 goal = 'angle'
 # 데이터 셋 준비
-dataSetDir = join('DATASET',nameDataset)
+relativeDir = '../preperation/SAVE_dataSet'
+dataSetDir = join(relativeDir,nameDataset)
 # 학습된 모델은 백업안하는 공간에서 저장하기
 SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 # epochs
