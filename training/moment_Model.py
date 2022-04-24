@@ -112,7 +112,6 @@ for numFold in range(0,5): # 5-fold crossvalidation
     # sclaer 불러오기
     # Here scaler is MinMaxScaler!
     load_scaler4X = load(open(join(dataSetDir,f"{numFold}_fold_scaler4X.pkl"), 'rb'))
-    load_scaler4Y_angle = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_angle.pkl"), 'rb'))
     load_scaler4Y_moBHWT = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_moBHWT.pkl"), 'rb'))
 
     # https://wandb.ai/sauravm/Optimizers/reports/How-to-Compare-Keras-Optimizers-in-Tensorflow--VmlldzoxNjU1OTA4

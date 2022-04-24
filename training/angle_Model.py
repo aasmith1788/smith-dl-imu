@@ -22,7 +22,7 @@ def seed_everything(seed: int = 42):
 
 #### 설정 영역
 modelVersion = 'Dense_1st'
-nameDataset = 'IWALQQ_2nd'
+nameDataset = 'IWALQQ_1st'
 goal = 'angle'
 # 데이터 셋 준비
 dataSetDir = join('DATASET',nameDataset)
@@ -104,8 +104,8 @@ def Z_Axis_RMSE(y_true, y_pred):
 def rescaled_RMSE_pct(y_true, y_pred):
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_)) / K.constant(load_scaler4Y_moBHWT.scale_)
+    y_true = (y_true - K.constant(load_scaler4Y_angle.min_)) / K.constant(load_scaler4Y_angle.scale_)
+    y_pred = (y_pred - K.constant(load_scaler4Y_angle.min_)) / K.constant(load_scaler4Y_angle.scale_)
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     rescaled_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -116,8 +116,8 @@ def X_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 0
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
+    y_true = (y_true - K.constant(load_scaler4Y_angle.min_[NumAxis])) / K.constant(load_scaler4Y_angle.scale_[NumAxis])
+    y_pred = (y_pred - K.constant(load_scaler4Y_angle.min_[NumAxis])) / K.constant(load_scaler4Y_angle.scale_[NumAxis])
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     X_Axis_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -128,8 +128,8 @@ def Y_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 1
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
+    y_true = (y_true - K.constant(load_scaler4Y_angle.min_[NumAxis])) / K.constant(load_scaler4Y_angle.scale_[NumAxis])
+    y_pred = (y_pred - K.constant(load_scaler4Y_angle.min_[NumAxis])) / K.constant(load_scaler4Y_angle.scale_[NumAxis])
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     Y_Axis_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -140,8 +140,8 @@ def Z_Axis_RMSE_pct(y_true, y_pred):
     NumAxis = 2
     y_true = tf.transpose(tf.reshape(tf.squeeze(y_true), [3,-1]))[:,NumAxis]
     y_pred = tf.transpose(tf.reshape(tf.squeeze(y_pred), [3,-1]))[:,NumAxis]
-    y_true = (y_true - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
-    y_pred = (y_pred - K.constant(load_scaler4Y_moBHWT.min_[NumAxis])) / K.constant(load_scaler4Y_moBHWT.scale_[NumAxis])
+    y_true = (y_true - K.constant(load_scaler4Y_angle.min_[NumAxis])) / K.constant(load_scaler4Y_angle.scale_[NumAxis])
+    y_pred = (y_pred - K.constant(load_scaler4Y_angle.min_[NumAxis])) / K.constant(load_scaler4Y_angle.scale_[NumAxis])
     # default is RMSE, squaredbool, default=True If True returns MSE value, if False returns RMSE value.
     # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html
     Z_Axis_RMSE_pct = 100 * K.sqrt(K.mean(K.square(y_pred - y_true))) / (K.max(y_true) - K.min(y_true))
@@ -157,13 +157,12 @@ for numFold in range(0,5): # 5-fold crossvalidation
     # 모든 데이터는 scaled된 데이터임!
     load_train = np.load(join(dataSetDir,f"{numFold}_fold_final_train.npz"))
     load_test = np.load(join(dataSetDir,f"{numFold}_fold_final_test.npz"))
-    print(f'loaded Train shape: {load_train["final_X_train"].shape}, {load_train["final_Y_angle_train"].shape}, {load_train["final_Y_moBHWT_train"].shape}')
-    print(f'loaded Test shape: {load_test["final_X_test"].shape}, {load_test["final_Y_angle_test"].shape}, {load_test["final_Y_moBHWT_test"].shape}')
+    print(f'loaded Train shape: {load_train["final_X_train"].shape}, {load_train["final_Y_angle_train"].shape}, {load_train["final_Y_moBWHT_train"].shape}')
+    print(f'loaded Test shape: {load_test["final_X_test"].shape}, {load_test["final_Y_angle_test"].shape}, {load_test["final_Y_moBWHT_test"].shape}')
     # sclaer 불러오기
     # Here scaler is MinMaxScaler!
     load_scaler4X = load(open(join(dataSetDir,f"{numFold}_fold_scaler4X.pkl"), 'rb'))
     load_scaler4Y_angle = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_angle.pkl"), 'rb'))
-    load_scaler4Y_moBHWT = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_moBHWT.pkl"), 'rb'))
 
     # https://wandb.ai/sauravm/Optimizers/reports/How-to-Compare-Keras-Optimizers-in-Tensorflow--VmlldzoxNjU1OTA4
     # Nadam을 선택한 이유
