@@ -22,7 +22,7 @@ def seed_everything(seed: int = 42):
 
 #### 설정 영역
 modelVersion = 'Dense_1st'
-nameDataset = 'IWALQQ_1st'
+nameDataset = 'IWALQQ_2nd'
 goal = 'angle'
 # 데이터 셋 준비
 relativeDir = '../preperation/SAVE_dataSet'

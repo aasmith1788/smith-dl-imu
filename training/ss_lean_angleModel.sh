@@ -2,14 +2,11 @@
 
 #$ -l h_rt=24:00:00
 #$ -N angle
-#$ -o result_qsub/angle
+#$ -o result_qsub/angle_lean
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
-#$ -PE OP 4
-# 메모리에 관해서는 아래 주소를 참고
-# https://www.bu.edu/tech/support/research/system-usage/running-jobs/batch-script-examples/#MEMORY
-
+#$ -pe omp 4
 
 module load miniconda/4.9.2
 conda activate sccIMU
