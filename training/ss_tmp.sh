@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
-#$ -l h_rt=24:00:00
-#$ -N angle
-#$ -o result_qsub/angle
+#$ -l h_rt=00:10:00
+#$ -N tmp
+#$ -o tmp
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
@@ -12,10 +12,10 @@
 
 
 module load miniconda/4.9.2
-conda activate sccIMU
+conda activate torchIMU
 
 # NSLOTS will be set to the # of requested cores
 
 export TF_NUM_INTEROP_THREADS=$(( $NSLOTS - 1 ))
 export TF_NUM_INTRAOP_THREADS=1
-python angle_Model.py
+python tmp_torch.py

@@ -6,7 +6,7 @@
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
-#$ -PE OP 4
+#$ -pe omp 4
 # 메모리에 관해서는 아래 주소를 참고
 # https://www.bu.edu/tech/support/research/system-usage/running-jobs/batch-script-examples/#MEMORY
 
