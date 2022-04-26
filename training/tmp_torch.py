@@ -1,3 +1,7 @@
+import torch
+import torchvision
+from sklearn.metrics import classification_report
+from tqdm import tqdm
 class Net(torch.nn.Module):
     """We create neural nets by subclassing the torch.nn.Module class in
     the newly defined class, we define 2 things:
