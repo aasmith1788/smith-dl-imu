@@ -15,7 +15,7 @@ import datetime
 
 ######### 설정 영역 ########
 modelVersion = 'Dense_1st_torch'
-nameDataset = 'IWALQQ_1st'
+nameDataset = 'IWALQQ_1st_correction'
 dataType = 'moBWHT' # or moBWHT
 # 데이터 위치
 relativeDir = '../preperation/SAVE_dataSet'
@@ -28,8 +28,8 @@ totalFold = 5
 
 epochs = 1000
 
-lreaningRate = 0.0005
-batch_size = 32
+learningRate = 0.001
+batch_size = 256
 
 log_interval = 10
 ############################
@@ -113,7 +113,7 @@ for numFold  in range(totalFold):
 
     # loss function and optimizer define
     criterion = nn.L1Loss() # mean absolute error
-    optimizer = torch.optim.NAdam(my_model.parameters(),lr=lreaningRate)
+    optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
 
     angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
     angle_test  = Dataset(dataSetDir, dataType, 'test', numFold)
@@ -121,8 +121,8 @@ for numFold  in range(totalFold):
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
     # 시각화를 위한 tensorboard 초기화
-    writer_train = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/train_{numFold}_fold')
-    writer_test = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/test_{numFold}_fold')
+    writer_train = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/train_{dataType}_{numFold}_fold')
+    writer_test = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/test_{dataType}_{numFold}_fold')
     x = torch.rand(1, 4242, device=device)
     writer_train.add_graph(my_model,x)
 
@@ -144,9 +144,9 @@ for numFold  in range(totalFold):
             optimizer.step()
             train_loss += loss.item() * data.size(0) # 이것은 모든 배치의 크기가 일정하지 않을 수 있기 때문에 이렇게 수행함! train_loss는 total loss of batch가 됨
             
-            train_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y) # 해당 배치에서의 총 loss의 합
-            train_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y) # 해당 배치에서의 총 loss의 합
-            train_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y) # 해당 배치에서의 총 loss의 합
+            train_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+            train_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+            train_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
             # if batch_idx % log_interval == 0:
             #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
             #         epoch, batch_idx * len(data), len(train_loader.dataset),
@@ -173,9 +173,9 @@ for numFold  in range(totalFold):
                 output = my_model(data)
                 loss = criterion(output,target)
                 test_loss += loss.item() * data.size(0)
-                test_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y)# 해당 배치에서의 총 loss의 합
-                test_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y) # 해당 배치에서의 총 loss의 합
-                test_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y) # 해당 배치에서의 총 loss의 합             
+                test_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item()# 해당 배치에서의 총 loss의 합
+                test_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                test_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합             
 
             test_loss /= len(test_loader.sampler)
             test_x_nRMSE /= len(test_loader.sampler) 

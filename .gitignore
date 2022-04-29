@@ -4,4 +4,5 @@ training/result_qsub/
 training/model_scripted.pt
 
 preperation/NORM
+preperation/NORM_CORRECTION
 preperation/SAVE_dataSet
