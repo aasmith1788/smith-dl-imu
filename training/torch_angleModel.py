@@ -55,7 +55,15 @@ class Mlp(nn.Module):
         x = F.relu(self.layer2(x))
         x = self.layer3(x)
         return x
-
+class RMSELoss(nn.Module):
+    def __init__(self, eps=1e-8):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        self.eps = eps
+        
+    def forward(self,yhat,y):
+        loss = torch.sqrt(self.mse(yhat,y) + self.eps)
+        return loss
 # 개빠른가..?
 class Dataset(torch.utils.data.Dataset): 
   def __init__(self, dataSetDir, dataType, sess, numFold):
@@ -112,7 +120,8 @@ for numFold  in range(totalFold):
     
 
     # loss function and optimizer define
-    criterion = nn.L1Loss() # mean absolute error
+    # criterion = nn.L1Loss() # mean absolute error
+    criterion = nn.RMSELoss() # mean absolute error
     optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
 
     angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
@@ -190,7 +199,7 @@ for numFold  in range(totalFold):
         print(f'\nTrain set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE}, Y_nRMSE: {train_y_nRMSE}, Z_nRMSE: {train_z_nRMSE}'
              +f'\nTest set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE}, Y_nRMSE: {test_y_nRMSE}, Z_nRMSE: {test_z_nRMSE}')
     writer_train.add_hparams(
-            {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset}, 
+            {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset , 'lossFunc':"RMSE"}, 
             { 
                 "loss": train_loss,
                 'X_nRMSE':train_x_nRMSE,
@@ -199,7 +208,7 @@ for numFold  in range(totalFold):
             }, 
         ) 
     writer_test.add_hparams(
-            {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset}, 
+            {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset, 'lossFunc':"RMSE"}, 
             { 
                 "loss": test_loss,
                 'X_nRMSE':test_x_nRMSE,
