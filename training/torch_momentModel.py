@@ -17,21 +17,21 @@ import datetime
 modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
 dataType = 'moBWHT' # or moBWHT
-# 데이터 위치
-relativeDir = '../preperation/SAVE_dataSet'
-dataSetDir = join(relativeDir,nameDataset)
-# 모델 저장 위치
-SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
-
-# tensorboard 위치
-totalFold = 5
-
-epochs = 1000
 
 learningRate = 0.0001
 batch_size = 16
+lossFunction = "RMSE"
 
-log_interval = 10
+totalFold = 5
+epochs = 1000
+
+log_interval = 10# 모델 저장 위치
+# 저장위치
+# 데이터 위치
+relativeDir = '../preperation/SAVE_dataSet'
+dataSetDir = join(relativeDir,nameDataset)
+# 모델 위치
+SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 ############################
 # 시간 설정
 time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -64,6 +64,15 @@ class RMSELoss(nn.Module):
     def forward(self,yhat,y):
         loss = torch.sqrt(self.mse(yhat,y) + self.eps)
         return loss
+
+# 검사할 lossfunction 생기면 여기다가 추가할 것
+def makelossFuncion(lossFunction):
+    if lossFunction == "RMSE":
+        criterion = RMSELoss() # mean absolute error
+    elif lossFunction == 'MAE':
+        criterion = nn.L1Loss()
+    return criterion
+
 # 개빠른가..?
 class Dataset(torch.utils.data.Dataset): 
   def __init__(self, dataSetDir, dataType, sess, numFold):
@@ -120,8 +129,7 @@ for numFold  in range(totalFold):
     
 
     # loss function and optimizer define
-    # criterion = nn.L1Loss() # mean absolute error
-    criterion = nn.RMSELoss() # mean absolute error
+    criterion = makelossFuncion(lossFunction)
     optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
 
     angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
@@ -199,7 +207,7 @@ for numFold  in range(totalFold):
         print(f'\nTrain set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE}, Y_nRMSE: {train_y_nRMSE}, Z_nRMSE: {train_z_nRMSE}'
              +f'\nTest set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE}, Y_nRMSE: {test_y_nRMSE}, Z_nRMSE: {test_z_nRMSE}')
     writer_train.add_hparams(
-            {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset , 'lossFunc':"RMSE"}, 
+            {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset , 'lossFunc':lossFunction}, 
             { 
                 "loss": train_loss,
                 'X_nRMSE':train_x_nRMSE,
@@ -208,7 +216,7 @@ for numFold  in range(totalFold):
             }, 
         ) 
     writer_test.add_hparams(
-            {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset, 'lossFunc':"RMSE"}, 
+            {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset, 'lossFunc':lossFunction}, 
             { 
                 "loss": test_loss,
                 'X_nRMSE':test_x_nRMSE,
