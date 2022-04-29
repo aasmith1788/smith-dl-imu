@@ -2,7 +2,7 @@
 
 #$ -l h_rt=2:00:00
 #$ -N torch_moment
-#$ -o result_qsub/torch_moment_3
+#$ -o result_qsub/torch_moment_4
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
