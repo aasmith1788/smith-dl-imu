@@ -189,6 +189,24 @@ for numFold  in range(totalFold):
 
         print(f'\nTrain set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE}, Y_nRMSE: {train_y_nRMSE}, Z_nRMSE: {train_z_nRMSE}'
              +f'\nTest set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE}, Y_nRMSE: {test_y_nRMSE}, Z_nRMSE: {test_z_nRMSE}')
+    writer_train.add_hparams(
+            {"lr": learningRate, "bsize": batch_size, "DS":nameDataset}, 
+            { 
+                "loss": train_loss,
+                'X_nRMSE':train_x_nRMSE,
+                'Y_nRMSE':train_y_nRMSE,
+                'Z_nRMSE':train_z_nRMSE,
+            }, 
+        ) 
+    writer_test.add_hparams(
+            {"lr": learningRate, "bsize": batch_size, "DS":nameDataset}, 
+            { 
+                "loss": test_loss,
+                'X_nRMSE':test_x_nRMSE,
+                'Y_nRMSE':test_y_nRMSE,
+                'Z_nRMSE':test_z_nRMSE,
+            }, 
+        ) 
     writer_train.close()
     writer_test.close()
     dir_save_torch = join(SaveDir,modelVersion,nameDataset)
