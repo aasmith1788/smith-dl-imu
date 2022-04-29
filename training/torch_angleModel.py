@@ -28,8 +28,8 @@ totalFold = 5
 
 epochs = 1000
 
-lreaningRate = 0.0002
-batch_size = 16
+learningRate = 0.001
+batch_size = 256
 
 log_interval = 10
 ############################
@@ -113,7 +113,7 @@ for numFold  in range(totalFold):
 
     # loss function and optimizer define
     criterion = nn.L1Loss() # mean absolute error
-    optimizer = torch.optim.NAdam(my_model.parameters(),lr=lreaningRate)
+    optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
 
     angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
     angle_test  = Dataset(dataSetDir, dataType, 'test', numFold)
