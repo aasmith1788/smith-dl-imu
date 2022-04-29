@@ -1,6 +1,7 @@
 training/DATASET/
 training/logs/
 training/result_qsub/
+training/model_scripted.pt
 
 preperation/NORM
 preperation/SAVE_dataSet
