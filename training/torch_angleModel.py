@@ -20,7 +20,7 @@ dataType = 'angle' # or moBWHT
 
 learningRate = 0.0001
 batch_size = 16
-lossFunction = "MAE"
+lossFunction = "RMSE"
 
 totalFold = 5
 epochs = 1000
