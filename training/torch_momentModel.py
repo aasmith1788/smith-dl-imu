@@ -34,7 +34,7 @@ dataSetDir = join(relativeDir,nameDataset)
 SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 ############################
 # 시간 설정
-time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
 
 # CPU or GPU?
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

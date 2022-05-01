@@ -18,9 +18,9 @@ modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
 dataType = 'angle' # or moBWHT
 
-learningRate = 0.0002
-batch_size = 32
-lossFunction = "MAE"
+learningRate = 0.0001
+batch_size = 16
+lossFunction = "RMSE"
 
 totalFold = 5
 epochs = 1000
@@ -34,7 +34,7 @@ dataSetDir = join(relativeDir,nameDataset)
 SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 ############################
 # 시간 설정
-time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
 
 # CPU or GPU?
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
