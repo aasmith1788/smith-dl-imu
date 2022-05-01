@@ -138,8 +138,8 @@ for numFold  in range(totalFold):
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
     # 시각화를 위한 tensorboard 초기화
-    writer_train = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/{dataType}/train_{numFold}_fold')
-    writer_test = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/{dataType}/test_{numFold}_fold')
+    writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/train_{numFold}_fold')
+    writer_test = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/test_{numFold}_fold')
     x = torch.rand(1, 4242, device=device)
     writer_train.add_graph(my_model,x)
 

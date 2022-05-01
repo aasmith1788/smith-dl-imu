@@ -18,8 +18,8 @@ modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
 dataType = 'angle' # or moBWHT
 
-learningRate = 0.0001
-batch_size = 16
+learningRate = 0.0005
+batch_size = 64
 lossFunction = "RMSE"
 
 totalFold = 5
@@ -33,6 +33,8 @@ dataSetDir = join(relativeDir,nameDataset)
 # 모델 위치
 SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 ############################
+print(f"현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
+     \nmodelV:{modelVersion}, DataSet:{nameDataset}")
 # 시간 설정
 time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
 
@@ -138,10 +140,11 @@ for numFold  in range(totalFold):
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
     # 시각화를 위한 tensorboard 초기화
-    writer_train = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/train_{dataType}_{numFold}_fold')
-    writer_test = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/test_{dataType}_{numFold}_fold')
+    writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/train_{numFold}_fold')
+    writer_test = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/test_{numFold}_fold')
     x = torch.rand(1, 4242, device=device)
     writer_train.add_graph(my_model,x)
+    writer_test.add_graph(my_model,x)
 
     # 학습시작 전 metric용 scaler 불러오기
     load_scaler4Y = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_{dataType}.pkl"), 'rb'))

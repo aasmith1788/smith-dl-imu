@@ -1,8 +1,9 @@
 #!/bin/bash -l
 
-#$ -l h_rt=2:00:00
-#$ -N torch_angle
-#$ -o result_qsub/angle/exp_5
+# 1시간 30분짜리 학습 6개 
+#$ -l h_rt=9:00:00
+#$ -N torch_moment
+#$ -o result_qsub/moment/grid
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
@@ -14,4 +15,4 @@
 module load miniconda/4.9.2
 conda activate torchIMU
 
-python torch_angleModel.py
+python grid_torch_momentModel.py
