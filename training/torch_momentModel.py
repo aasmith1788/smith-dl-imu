@@ -18,9 +18,9 @@ modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
 dataType = 'moBWHT' # or moBWHT
 
-learningRate = 0.0001
-batch_size = 16
-lossFunction = "MAE"
+learningRate = 0.0002
+batch_size = 32
+lossFunction = "RMSE"
 
 totalFold = 5
 epochs = 1000
