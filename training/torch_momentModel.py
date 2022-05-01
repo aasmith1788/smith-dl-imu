@@ -20,7 +20,7 @@ dataType = 'moBWHT' # or moBWHT
 
 learningRate = 0.0002
 batch_size = 32
-lossFunction = "RMSE"
+lossFunction = "MAE"
 
 totalFold = 5
 epochs = 1000
