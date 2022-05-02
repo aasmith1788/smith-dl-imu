@@ -37,9 +37,6 @@ dataSetDir = join(relativeDir,nameDataset)
 SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 ############################
 
-# 시간 설정
-time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
-
 # CPU or GPU?
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # 모델 만들기
@@ -135,6 +132,8 @@ for opt1 in range(0,3):
         count = count + 1 
         print(f"count:{count} | 현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
             \nmodelV:{modelVersion}, DataSet:{nameDataset}")
+            # 시간 설정
+        time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
         for numFold  in range(totalFold):
             print(f'now fold: {numFold}')
             # 매 fold마다 새로운 모델
@@ -151,8 +150,8 @@ for opt1 in range(0,3):
             test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
             # 시각화를 위한 tensorboard 초기화
-            writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/train_{numFold}_fold')
-            writer_test = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/test_{numFold}_fold')
+            writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{numFold}_fold/train/{time}')
+            writer_test = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{numFold}_fold/test/{time}')
             x = torch.rand(1, 4242, device=device)
             writer_train.add_graph(my_model,x)
             writer_test.add_graph(my_model,x)
