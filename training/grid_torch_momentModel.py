@@ -125,13 +125,12 @@ def ensure_dir(file_path):
 count = 0
 for opt1 in range(0,3):
     for opt2 in range(0,2):
-        print(f"count:{count}")
         learningRate = list_learningRate[opt1]
         batch_size = list_batch_size[opt1]
         lossFunction = list_lossFunction[opt2]
-        count = count + 1 
         print(f"count:{count} | 현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
             \nmodelV:{modelVersion}, DataSet:{nameDataset}")
+        count = count + 1 
             # 시간 설정
         time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
         for numFold  in range(totalFold):
