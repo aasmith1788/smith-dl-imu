@@ -149,8 +149,8 @@ for opt1 in range(0,3):
             test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
             # 시각화를 위한 tensorboard 초기화
-            writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{numFold}_fold/train/{time}')
-            writer_test = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{numFold}_fold/test/{time}')
+            writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold')
+            writer_test =  SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold')
             x = torch.rand(1, 4242, device=device)
             writer_train.add_graph(my_model,x)
             writer_test.add_graph(my_model,x)
