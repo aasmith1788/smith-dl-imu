@@ -21,9 +21,9 @@ dataType = 'angle' # or moBWHT
 #################################
 # 여기는 grid로 돌림!
 #################################
-learningRate = {0:0.0001, 1:0.0002, 2:0.0005} # opt1
-batch_size = {0:16, 1:32, 2:64} # opt1
-lossFunction =  {0:"RMSE", 1:"MAE"} # opt2
+list_learningRate = {0:0.0001, 1:0.0002, 2:0.0005} # opt1
+list_batch_size = {0:16, 1:32, 2:64} # opt1
+list_lossFunction =  {0:"RMSE", 1:"MAE"} # opt2
 
 totalFold = 5
 epochs = 1000
@@ -126,9 +126,9 @@ count = 0
 for opt1 in range(0,3):
     for opt2 in range(0,2):
         print(f"count:{count}")
-        learningRate = learningRate[opt1]
-        batch_size = batch_size[opt1]
-        lossFunction = lossFunction[opt2]
+        learningRate = list_learningRate[opt1]
+        batch_size = list_batch_size[opt1]
+        lossFunction = list_lossFunction[opt2]
         count = count + 1 
         print(f"count:{count} | 현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
             \nmodelV:{modelVersion}, DataSet:{nameDataset}")

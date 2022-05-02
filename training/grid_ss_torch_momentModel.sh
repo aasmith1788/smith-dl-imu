@@ -2,7 +2,7 @@
 
 # 1시간 30분짜리 학습 6개 
 #$ -l h_rt=9:00:00
-#$ -N torch_moment
+#$ -N Gtorch_moment
 #$ -o result_qsub/moment/grid
 #$ -j y    
 #$ -m ea

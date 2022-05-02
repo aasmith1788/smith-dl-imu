@@ -2,7 +2,7 @@
 
 # 1시간 30분짜리 학습 6개 
 #$ -l h_rt=9:00:00
-#$ -N torch_angle
+#$ -N Gtorch_angle
 #$ -o result_qsub/angle/grid
 #$ -j y    
 #$ -m ea
