@@ -9,7 +9,7 @@
 #$ -pe omp 4
 
 module load miniconda/4.9.2
-conda activate sccIMU
+conda activate scc
 
 # NSLOTS will be set to the # of requested cores
 
