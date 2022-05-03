@@ -21,7 +21,7 @@ dataType = 'angle' # or moBWHT
 #################################
 # 여기는 grid로 돌림!
 #################################
-list_learningRate = {0:0.0001, 1:0.0002, 2:0.0005, 3:0.0008, 4:0.001, 5:0.002} # opt1
+list_learningRate = {0:0.0008} # opt1
 list_batch_size = {0:32} # opt1
 list_lossFunction =  {0:"MAE"} # opt2
 
