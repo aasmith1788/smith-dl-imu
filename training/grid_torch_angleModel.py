@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import numpy as np
 
-
 from torch.utils.tensorboard import SummaryWriter
 import os
 from os.path import join
@@ -14,6 +13,7 @@ import random
 import datetime
 
 ######### 설정 영역 ########
+exp_name = 'torch_20220503' # 실험 이름
 modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
 dataType = 'angle' # or moBWHT
@@ -21,8 +21,8 @@ dataType = 'angle' # or moBWHT
 #################################
 # 여기는 grid로 돌림!
 #################################
-list_learningRate = {0:0.0008} # opt1
-list_batch_size = {0:32} # opt1
+list_learningRate = {0:0.001, 1:0.002, 2:0.004} # opt1 
+list_batch_size = {0:32, 1:64, 2:128} # opt2
 list_lossFunction =  {0:"MAE"} # opt2
 
 totalFold = 5
@@ -124,126 +124,127 @@ def ensure_dir(file_path):
 
 count = 0
 for opt1 in range(0,len(list_learningRate)):
-    learningRate = list_learningRate[opt1]
-    batch_size = list_batch_size[0]
-    lossFunction = list_lossFunction[0]
-    print(f"count:{count} | 현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
-        \nmodelV:{modelVersion}, DataSet:{nameDataset}")
-    count = count + 1 
-        # 시간 설정
-    time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
-    for numFold  in range(totalFold):
-        print(f'now fold: {numFold}')
-        # 매 fold마다 새로운 모델
-        my_model = Mlp()
-        my_model.to(device)
-        
-        # loss function and optimizer define
-        criterion = makelossFuncion(lossFunction)
-        optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
-
-        angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
-        angle_test  = Dataset(dataSetDir, dataType, 'test', numFold)
-        train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
-
-        # 시각화를 위한 tensorboard 초기화
-        writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold')
-        writer_test =  SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold')
-        x = torch.rand(1, 4242, device=device)
-        writer_train.add_graph(my_model,x)
-        writer_test.add_graph(my_model,x)
-
-        # 학습시작 전 metric용 scaler 불러오기
-        load_scaler4Y = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_{dataType}.pkl"), 'rb'))
-        for epoch in range(epochs):
-            my_model.train()
+    for opt2 in range(0,len(list_batch_size)):
+        learningRate = list_learningRate[opt1]
+        batch_size = list_batch_size[opt2]
+        lossFunction = list_lossFunction[0]
+        print(f"count:{count} | 현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
+            \nmodelV:{modelVersion}, DataSet:{nameDataset}")
+        count = count + 1 
+            # 시간 설정
+        time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
+        for numFold  in range(totalFold):
+            print(f'now fold: {numFold}')
+            # 매 fold마다 새로운 모델
+            my_model = Mlp()
+            my_model.to(device)
             
-            train_loss = 0
-            train_x_nRMSE = 0
-            train_y_nRMSE = 0
-            train_z_nRMSE = 0
-            for batch_idx, (data, target) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
-                data, target = data.to(device), target.to(device)
-                optimizer.zero_grad()
-                output = my_model(data)
-                loss = criterion(output, target)
-                loss.backward()
-                optimizer.step()
-                train_loss += loss.item() * data.size(0) # 이것은 모든 배치의 크기가 일정하지 않을 수 있기 때문에 이렇게 수행함! train_loss는 total loss of batch가 됨
+            # loss function and optimizer define
+            criterion = makelossFuncion(lossFunction)
+            optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
+
+            angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
+            angle_test  = Dataset(dataSetDir, dataType, 'test', numFold)
+            train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
+            test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
+
+            # 시각화를 위한 tensorboard 초기화
+            writer_train = SummaryWriter(f'./logs/{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold')
+            writer_test =  SummaryWriter(f'./logs/{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold')
+            x = torch.rand(1, 4242, device=device)
+            writer_train.add_graph(my_model,x)
+            writer_test.add_graph(my_model,x)
+
+            # 학습시작 전 metric용 scaler 불러오기
+            load_scaler4Y = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_{dataType}.pkl"), 'rb'))
+            for epoch in range(epochs):
+                my_model.train()
                 
-                train_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
-                train_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
-                train_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
-                # if batch_idx % log_interval == 0:
-                #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                #         epoch, batch_idx * len(data), len(train_loader.dataset),
-                #         100. * batch_idx / len(train_loader), loss.item()))
-
-            train_loss /= len(train_loader.sampler) 
-            train_x_nRMSE /= len(train_loader.sampler) 
-            train_y_nRMSE /= len(train_loader.sampler) 
-            train_z_nRMSE /= len(train_loader.sampler) 
-            
-            writer_train.add_scalar('loss(MAE)', train_loss, epoch)
-            writer_train.add_scalar(f'{dataType}_X_nRMSE', train_x_nRMSE, epoch)
-            writer_train.add_scalar(f'{dataType}_Y_nRMSE', train_y_nRMSE, epoch)
-            writer_train.add_scalar(f'{dataType}_Z_nRMSE', train_z_nRMSE, epoch)
-
-            test_loss = 0
-            test_x_nRMSE = 0
-            test_y_nRMSE = 0
-            test_z_nRMSE = 0
-            my_model.eval()  # batch norm이나 dropout 등을 train mode 변환
-            with torch.no_grad():  # autograd engine, 즉 backpropagatin이나 gradient 계산 등을 꺼서 memory usage를 줄이고 속도를 높임
-                for data, target in test_loader:
+                train_loss = 0
+                train_x_nRMSE = 0
+                train_y_nRMSE = 0
+                train_z_nRMSE = 0
+                for batch_idx, (data, target) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
                     data, target = data.to(device), target.to(device)
+                    optimizer.zero_grad()
                     output = my_model(data)
-                    loss = criterion(output,target)
-                    test_loss += loss.item() * data.size(0)
-                    test_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item()# 해당 배치에서의 총 loss의 합
-                    test_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
-                    test_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합             
+                    loss = criterion(output, target)
+                    loss.backward()
+                    optimizer.step()
+                    train_loss += loss.item() * data.size(0) # 이것은 모든 배치의 크기가 일정하지 않을 수 있기 때문에 이렇게 수행함! train_loss는 total loss of batch가 됨
+                    
+                    train_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                    train_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                    train_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                    # if batch_idx % log_interval == 0:
+                    #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    #         epoch, batch_idx * len(data), len(train_loader.dataset),
+                    #         100. * batch_idx / len(train_loader), loss.item()))
 
-                test_loss /= len(test_loader.sampler)
-                test_x_nRMSE /= len(test_loader.sampler) 
-                test_y_nRMSE /= len(test_loader.sampler) 
-                test_z_nRMSE /= len(test_loader.sampler)
+                train_loss /= len(train_loader.sampler) 
+                train_x_nRMSE /= len(train_loader.sampler) 
+                train_y_nRMSE /= len(train_loader.sampler) 
+                train_z_nRMSE /= len(train_loader.sampler) 
+                
+                writer_train.add_scalar('loss(MAE)', train_loss, epoch)
+                writer_train.add_scalar(f'{dataType}_X_nRMSE', train_x_nRMSE, epoch)
+                writer_train.add_scalar(f'{dataType}_Y_nRMSE', train_y_nRMSE, epoch)
+                writer_train.add_scalar(f'{dataType}_Z_nRMSE', train_z_nRMSE, epoch)
 
-                writer_test.add_scalar('loss(MAE)', test_loss, epoch)
-                writer_test.add_scalar(f'{dataType}_X_nRMSE', test_x_nRMSE, epoch)
-                writer_test.add_scalar(f'{dataType}_Y_nRMSE', test_y_nRMSE, epoch)
-                writer_test.add_scalar(f'{dataType}_Z_nRMSE', test_z_nRMSE, epoch)
+                test_loss = 0
+                test_x_nRMSE = 0
+                test_y_nRMSE = 0
+                test_z_nRMSE = 0
+                my_model.eval()  # batch norm이나 dropout 등을 train mode 변환
+                with torch.no_grad():  # autograd engine, 즉 backpropagatin이나 gradient 계산 등을 꺼서 memory usage를 줄이고 속도를 높임
+                    for data, target in test_loader:
+                        data, target = data.to(device), target.to(device)
+                        output = my_model(data)
+                        loss = criterion(output,target)
+                        test_loss += loss.item() * data.size(0)
+                        test_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item()# 해당 배치에서의 총 loss의 합
+                        test_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                        test_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합             
 
-            print(f'\nTrain set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE}, Y_nRMSE: {train_y_nRMSE}, Z_nRMSE: {train_z_nRMSE}'
-                +f'\nTest set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE}, Y_nRMSE: {test_y_nRMSE}, Z_nRMSE: {test_z_nRMSE}')
-        writer_train.add_hparams(
-                {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset , 'lossFunc':lossFunction}, 
-                { 
-                    "loss": train_loss,
-                    'X_nRMSE':train_x_nRMSE,
-                    'Y_nRMSE':train_y_nRMSE,
-                    'Z_nRMSE':train_z_nRMSE,
-                }, 
-            ) 
-        writer_test.add_hparams(
-                {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset, 'lossFunc':lossFunction}, 
-                { 
-                    "loss": test_loss,
-                    'X_nRMSE':test_x_nRMSE,
-                    'Y_nRMSE':test_y_nRMSE,
-                    'Z_nRMSE':test_z_nRMSE,
-                }, 
-            ) 
-        writer_train.close()
-        writer_test.close()
-        dir_save_torch = join(SaveDir,modelVersion,nameDataset)
-        ensure_dir(dir_save_torch)
-        model_scripted = torch.jit.script(my_model) # Export to TorchScript
-        model_scripted.save(join(dir_save_torch,f'{dataType}_{numFold}_fold.pt')) # Save
-        # 저장된 모델 불러올 때
-        # 항상 불러온 모델 뒤에 model.eval() 붙일 것!
-        # https://tutorials.pytorch.kr/beginner/saving_loading_models.html#export-load-model-in-torchscript-format
-        # model = torch.jit.load('model_scripted.pt')
-        # model.eval()
+                    test_loss /= len(test_loader.sampler)
+                    test_x_nRMSE /= len(test_loader.sampler) 
+                    test_y_nRMSE /= len(test_loader.sampler) 
+                    test_z_nRMSE /= len(test_loader.sampler)
+
+                    writer_test.add_scalar('loss(MAE)', test_loss, epoch)
+                    writer_test.add_scalar(f'{dataType}_X_nRMSE', test_x_nRMSE, epoch)
+                    writer_test.add_scalar(f'{dataType}_Y_nRMSE', test_y_nRMSE, epoch)
+                    writer_test.add_scalar(f'{dataType}_Z_nRMSE', test_z_nRMSE, epoch)
+
+                print(f'\nTrain set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE}, Y_nRMSE: {train_y_nRMSE}, Z_nRMSE: {train_z_nRMSE}'
+                    +f'\nTest set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE}, Y_nRMSE: {test_y_nRMSE}, Z_nRMSE: {test_z_nRMSE}')
+            writer_train.add_hparams(
+                    {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset , 'lossFunc':lossFunction}, 
+                    { 
+                        "loss": train_loss,
+                        'X_nRMSE':train_x_nRMSE,
+                        'Y_nRMSE':train_y_nRMSE,
+                        'Z_nRMSE':train_z_nRMSE,
+                    }, 
+                ) 
+            writer_test.add_hparams(
+                    {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset, 'lossFunc':lossFunction}, 
+                    { 
+                        "loss": test_loss,
+                        'X_nRMSE':test_x_nRMSE,
+                        'Y_nRMSE':test_y_nRMSE,
+                        'Z_nRMSE':test_z_nRMSE,
+                    }, 
+                ) 
+            writer_train.close()
+            writer_test.close()
+            dir_save_torch = join(SaveDir,modelVersion,nameDataset)
+            ensure_dir(dir_save_torch)
+            model_scripted = torch.jit.script(my_model) # Export to TorchScript
+            model_scripted.save(join(dir_save_torch,f'{dataType}_{numFold}_fold.pt')) # Save
+            # 저장된 모델 불러올 때
+            # 항상 불러온 모델 뒤에 model.eval() 붙일 것!
+            # https://tutorials.pytorch.kr/beginner/saving_loading_models.html#export-load-model-in-torchscript-format
+            # model = torch.jit.load('model_scripted.pt')
+            # model.eval()
 
