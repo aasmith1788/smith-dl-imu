@@ -11,7 +11,7 @@
 # https://www.bu.edu/tech/support/research/system-usage/running-jobs/batch-script-examples/#MEMORY
 
 module load miniconda/4.9.2
-conda activate sccIMU
+conda activate scc
 
 # NSLOTS will be set to the # of requested cores
 
