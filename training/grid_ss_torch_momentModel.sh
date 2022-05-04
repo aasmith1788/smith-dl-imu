@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 # 1시간 30분짜리(넉넉하게 2시간) 학습 9개 
-#$ -l h_rt=18:00:00
+#$ -l h_rt=5:00:00
 #$ -N Gtorch_moment
 #$ -o result_qsub/moment/grid
 #$ -j y    

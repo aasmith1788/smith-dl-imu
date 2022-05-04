@@ -21,8 +21,8 @@ dataType = 'angle' # or moBWHT
 #################################
 # 여기는 grid로 돌림!
 #################################
-list_learningRate = {0:0.001, 1:0.002, 2:0.004} # opt1 
-list_batch_size = {0:32, 1:64, 2:128} # opt2
+list_learningRate = {0:0.006, 1:0.008, 2:0.01} # opt1 
+list_batch_size = {0:128} # opt2
 list_lossFunction =  {0:"MAE"} # opt2
 
 totalFold = 5
