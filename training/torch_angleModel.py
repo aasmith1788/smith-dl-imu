@@ -17,24 +17,26 @@ import datetime
 modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
 dataType = 'angle' # or moBWHT
+
+learningRate = 0.0005
+batch_size = 64
+lossFunction = "RMSE"
+
+totalFold = 5
+epochs = 1000
+
+log_interval = 10# 모델 저장 위치
+# 저장위치
 # 데이터 위치
 relativeDir = '../preperation/SAVE_dataSet'
 dataSetDir = join(relativeDir,nameDataset)
-# 모델 저장 위치
+# 모델 위치
 SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
-
-# tensorboard 위치
-totalFold = 5
-
-epochs = 1000
-
-learningRate = 0.001
-batch_size = 256
-
-log_interval = 10
 ############################
+print(f"현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
+     \nmodelV:{modelVersion}, DataSet:{nameDataset}")
 # 시간 설정
-time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
 
 # CPU or GPU?
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -55,6 +57,23 @@ class Mlp(nn.Module):
         x = F.relu(self.layer2(x))
         x = self.layer3(x)
         return x
+class RMSELoss(nn.Module):
+    def __init__(self, eps=1e-8):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        self.eps = eps
+        
+    def forward(self,yhat,y):
+        loss = torch.sqrt(self.mse(yhat,y) + self.eps)
+        return loss
+
+# 검사할 lossfunction 생기면 여기다가 추가할 것
+def makelossFuncion(lossFunction):
+    if lossFunction == "RMSE":
+        criterion = RMSELoss() # mean absolute error
+    elif lossFunction == 'MAE':
+        criterion = nn.L1Loss()
+    return criterion
 
 # 개빠른가..?
 class Dataset(torch.utils.data.Dataset): 
@@ -112,7 +131,7 @@ for numFold  in range(totalFold):
     
 
     # loss function and optimizer define
-    criterion = nn.L1Loss() # mean absolute error
+    criterion = makelossFuncion(lossFunction)
     optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
 
     angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
@@ -121,10 +140,11 @@ for numFold  in range(totalFold):
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
     # 시각화를 위한 tensorboard 초기화
-    writer_train = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/train_{dataType}_{numFold}_fold')
-    writer_test = SummaryWriter(f'./logs/pytorch/{time}/{modelVersion}/{nameDataset}/test_{dataType}_{numFold}_fold')
+    writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/train_{numFold}_fold')
+    writer_test = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/test_{numFold}_fold')
     x = torch.rand(1, 4242, device=device)
     writer_train.add_graph(my_model,x)
+    writer_test.add_graph(my_model,x)
 
     # 학습시작 전 metric용 scaler 불러오기
     load_scaler4Y = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_{dataType}.pkl"), 'rb'))
@@ -190,7 +210,7 @@ for numFold  in range(totalFold):
         print(f'\nTrain set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE}, Y_nRMSE: {train_y_nRMSE}, Z_nRMSE: {train_z_nRMSE}'
              +f'\nTest set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE}, Y_nRMSE: {test_y_nRMSE}, Z_nRMSE: {test_z_nRMSE}')
     writer_train.add_hparams(
-            {"lr": learningRate, "bsize": batch_size, "DS":nameDataset}, 
+            {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset , 'lossFunc':lossFunction}, 
             { 
                 "loss": train_loss,
                 'X_nRMSE':train_x_nRMSE,
@@ -199,7 +219,7 @@ for numFold  in range(totalFold):
             }, 
         ) 
     writer_test.add_hparams(
-            {"lr": learningRate, "bsize": batch_size, "DS":nameDataset}, 
+            {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset, 'lossFunc':lossFunction}, 
             { 
                 "loss": test_loss,
                 'X_nRMSE':test_x_nRMSE,
