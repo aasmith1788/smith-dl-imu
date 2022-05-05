@@ -134,7 +134,7 @@ elif args.mode == 'CHK':
     num_trial = 0
     firstScene = True
     for datum in dataList:
-        if not (list_Excluded_byFig.loc[list_Excluded_byFig.filename == datum, "type"] == 'TBD').empty:
+        if (list_Excluded_byFig.loc[list_Excluded_byFig.filename == datum, "type"].values == 'TBD'):
             while True:
                 if keyboard.read_key(suppress=True) == "w":
                     print(f'\nNo:{num_trial} | remains: {num_TBD-num_trial}')
