@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 
 from torch.utils.tensorboard import SummaryWriter
@@ -39,6 +40,7 @@ SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
 
 # CPU or GPU?
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 # 모델 만들기
 class Mlp(nn.Module):
     def __init__(self):
@@ -116,8 +118,8 @@ def nRMSE_Axis_TLPerbatch(pred, target,axis,load_scaler4Y):
     for bat in range(batchNum): # batch 내를 순회
         pred_axis   = torch.transpose(torch.reshape(torch.squeeze(pred[bat]), [3,-1]), 0, 1)[:,axis]
         target_axis = torch.transpose(torch.reshape(torch.squeeze(target[bat]), [3,-1]), 0, 1)[:,axis]
-        pred_axis = (pred_axis - torch.tensor(load_scaler4Y.min_[axis])) / torch.tensor(load_scaler4Y.scale_[axis])
-        target_axis = (target_axis - torch.tensor(load_scaler4Y.min_[axis])) / torch.tensor(load_scaler4Y.scale_[axis])
+        pred_axis = (pred_axis - torch.tensor(load_scaler4Y.min_)) / torch.tensor(load_scaler4Y.scale_)
+        target_axis = (target_axis - torch.tensor(load_scaler4Y.min_)) / torch.tensor(load_scaler4Y.scale_)
         nRMSE = 100 * torch.sqrt(torch.mean(torch.square(pred_axis - target_axis))) / (torch.max(target_axis) - torch.min(target_axis))
         nRMSE_perbatch += nRMSE
     return nRMSE_perbatch
@@ -126,6 +128,18 @@ def ensure_dir(file_path):
     if not os.path.exists(file_path):
         os.makedirs(file_path)
 
+class MinMaxScalerSensor(MinMaxScaler):
+    def fit(self, X, y=None):
+        x = np.reshape(X, newshape=(X.shape[0]*X.shape[1], -1))
+        super().fit(x, y=y)
+
+    def transform(self, X):
+        x = np.reshape(X, newshape=(X.shape[0]*X.shape[1], -1))
+        return np.reshape(super().transform(x), newshape=X.shape)
+    
+    def inverse_transform(self, X):
+        x = np.reshape(X, newshape=(X.shape[0]*X.shape[1], -1))
+        return np.reshape(super().inverse_transform(x), newshape=X.shape)
 count = 0
 for opt1 in range(0,len(list_learningRate)):
     for opt2 in range(0,len(list_batch_size)):
