@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-# 1시간 30분짜리(넉넉하게 2시간) 학습 9개 
+# 1시간 30분짜리(넉넉하게 2시간) 학습 3개 
 #$ -l h_rt=5:00:00
 #$ -N Gtorch_angle
 #$ -o result_qsub/angle/grid
