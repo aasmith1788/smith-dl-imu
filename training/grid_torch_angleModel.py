@@ -13,9 +13,9 @@ import random
 import datetime
 
 ######### 설정 영역 ########
-exp_name = 'torch_20220503' # 실험 이름
+exp_name = 'torch_20220511' # 실험 이름
 modelVersion = 'Dense_1st_torch'
-nameDataset = 'IWALQQ_1st_correction'
+nameDataset = 'IWALQQ_AE_1st'
 dataType = 'angle' # or moBWHT
 
 #################################
