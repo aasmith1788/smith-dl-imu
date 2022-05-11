@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
 # 1시간 30분짜리(넉넉하게 2시간) 학습 3개 
-#$ -l h_rt=1:30:00
-#$ -N Genv_imu
-#$ -o result_qsub/angle/grid_test_env_imu
+#$ -l h_rt=5:00:00
+#$ -N Gtorch_angle
+#$ -o result_qsub/angle/grid
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
@@ -13,6 +13,6 @@
 # https://www.bu.edu/tech/support/research/system-usage/running-jobs/batch-script-examples/#MEMORY
 
 module load miniconda/4.9.2
-conda activate imu
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/restricted/project/movelab/bcha/conda_env/envs/torch/lib/
+conda activate torch
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/restricted/project/movelab/bcha/conda_env/envs/torch/lib/
 python grid_torch_angleModel.py

@@ -14,5 +14,5 @@
 
 module load miniconda/4.9.2
 conda activate torch
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/restricted/project/movelab/bcha/conda_env/envs/torch/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/restricted/project/movelab/bcha/conda_env/envs/torch/lib/
 python grid_torch_momentModel.py
