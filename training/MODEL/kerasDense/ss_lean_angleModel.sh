@@ -2,7 +2,7 @@
 
 #$ -l h_rt=24:00:00
 #$ -N angle
-#$ -o result_qsub/angle_lean
+#$ -o ../../result_qsub/angle_lean
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
