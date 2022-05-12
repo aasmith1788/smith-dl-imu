@@ -16,7 +16,7 @@ import datetime
 ######### 설정 영역 ########
 modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
-dataType = 'angle' # or moBWHT
+dataType = 'moBWHT' # or moBWHT
 
 learningRate = 0.0005
 batch_size = 64
@@ -28,10 +28,11 @@ epochs = 1000
 log_interval = 10# 모델 저장 위치
 # 저장위치
 # 데이터 위치
-relativeDir = '../preperation/SAVE_dataSet'
-dataSetDir = join(relativeDir,nameDataset)
+absDataDir = r'/restricted/project/movelab/bcha/IMUforKnee/preperation/SAVE_dataSet'
+dataSetDir = join(absDataDir,nameDataset)
 # 모델 위치
-SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
+SaveDir = r'/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel'
+logDir = r'/restricted/project/movelab/bcha/IMUforKnee/training/logs'
 ############################
 print(f"현재 설정 Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
      \nmodelV:{modelVersion}, DataSet:{nameDataset}")
@@ -140,8 +141,8 @@ for numFold  in range(totalFold):
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
     # 시각화를 위한 tensorboard 초기화
-    writer_train = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/train_{numFold}_fold')
-    writer_test = SummaryWriter(f'./logs/pytorch/{modelVersion}/{nameDataset}/{dataType}/{time}/test_{numFold}_fold')
+    writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold'))
+    writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold'))
     x = torch.rand(1, 4242, device=device)
     writer_train.add_graph(my_model,x)
     writer_test.add_graph(my_model,x)

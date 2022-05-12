@@ -2,7 +2,7 @@
 
 #$ -l h_rt=2:00:00
 #$ -N torch_moment
-#$ -o result_qsub/moment/exp_4
+#$ -o ../../result_qsub/moment/exp_4
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
@@ -12,6 +12,6 @@
 # https://www.bu.edu/tech/support/research/system-usage/running-jobs/batch-script-examples/#MEMORY
 
 module load miniconda/4.9.2
-conda activate torch
+conda activate imu
 
 python torch_momentModel.py

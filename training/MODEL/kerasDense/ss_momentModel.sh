@@ -2,7 +2,7 @@
 
 #$ -l h_rt=24:00:00
 #$ -N moment
-#$ -o result_qsub/moment
+#$ -o ../../result_qsub/moment
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1

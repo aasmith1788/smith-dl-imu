@@ -3,7 +3,7 @@
 # 1시간 30분짜리(넉넉하게 2시간) 학습 3개 
 #$ -l h_rt=5:00:00
 #$ -N Gtorch_moment
-#$ -o result_qsub/moment/grid
+#$ -o ../../result_qsub/moment/grid
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
@@ -13,6 +13,5 @@
 # https://www.bu.edu/tech/support/research/system-usage/running-jobs/batch-script-examples/#MEMORY
 
 module load miniconda/4.9.2
-conda activate torch
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/restricted/project/movelab/bcha/conda_env/envs/torch/lib/
+conda activate imu
 python grid_torch_momentModel.py

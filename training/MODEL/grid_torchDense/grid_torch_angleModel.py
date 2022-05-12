@@ -14,7 +14,7 @@ import random
 import datetime
 
 ######### 설정 영역 ########
-exp_name = 'torch_20220511' # 실험 이름
+exp_name = 'torch_20220511' # 실험 이름 혹은 오늘 날짜
 modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_AE_1st'
 dataType = 'angle' # or moBWHT
@@ -32,10 +32,11 @@ epochs = 1000
 log_interval = 10# 모델 저장 위치
 # 저장위치
 # 데이터 위치
-relativeDir = '../preperation/SAVE_dataSet'
-dataSetDir = join(relativeDir,nameDataset)
+absDataDir = r'/restricted/project/movelab/bcha/IMUforKnee/preperation/SAVE_dataSet'
+dataSetDir = join(absDataDir,nameDataset)
 # 모델 위치
-SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
+SaveDir = r'/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel'
+logDir = r'/restricted/project/movelab/bcha/IMUforKnee/training/logs'
 ############################
 
 # CPU or GPU?
@@ -166,8 +167,8 @@ for opt1 in range(0,len(list_learningRate)):
             test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
             # 시각화를 위한 tensorboard 초기화
-            writer_train = SummaryWriter(f'./logs/{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold')
-            writer_test =  SummaryWriter(f'./logs/{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold')
+            writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold'))
+            writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold'))
             x = torch.rand(1, 4242, device=device)
             writer_train.add_graph(my_model,x)
             writer_test.add_graph(my_model,x)

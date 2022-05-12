@@ -14,7 +14,7 @@ import random
 import datetime
 
 ######### 설정 영역 ########
-exp_name = 'torch_20220511' # 실험 이름
+exp_name = 'torch_20220511' # 실험 이름 혹은 오늘 날짜
 modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_AE_1st'
 dataType = 'moBWHT' # or moBWHT
@@ -32,10 +32,11 @@ epochs = 1000
 log_interval = 10# 모델 저장 위치
 # 저장위치
 # 데이터 위치
-relativeDir = '../preperation/SAVE_dataSet'
-dataSetDir = join(relativeDir,nameDataset)
+absDataDir = r'/restricted/project/movelab/bcha/IMUforKnee/preperation/SAVE_dataSet'
+dataSetDir = join(absDataDir,nameDataset)
 # 모델 위치
-SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
+SaveDir = r'/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel'
+logDir = r'/restricted/project/movelab/bcha/IMUforKnee/training/logs'
 ############################
 
 # CPU or GPU?
@@ -86,7 +87,7 @@ class Dataset(torch.utils.data.Dataset):
       # AE데이터로 Dense 학습 시킬 때
       self.load_Data_X = np.reshape(self.load_Data_X, newshape=(-1,self.load_Data_X.shape[1]*self.load_Data_X.shape[2],1), order='F')
       self.load_Data_Y = np.reshape(self.load_Data_Y, newshape=(-1,self.load_Data_Y.shape[1]*self.load_Data_Y.shape[2],1), order='F')
-
+      
       self.load_Data_X = torch.squeeze(self.load_Data_X.type(torch.FloatTensor))
       self.load_Data_Y = torch.squeeze(self.load_Data_Y.type(torch.FloatTensor))
   def __len__(self):
@@ -127,7 +128,6 @@ def nRMSE_Axis_TLPerbatch(pred, target,axis,load_scaler4Y):
 def ensure_dir(file_path):
     if not os.path.exists(file_path):
         os.makedirs(file_path)
-
 class MinMaxScalerSensor(MinMaxScaler):
     def fit(self, X, y=None):
         x = np.reshape(X, newshape=(X.shape[0]*X.shape[1], -1))
@@ -167,8 +167,8 @@ for opt1 in range(0,len(list_learningRate)):
             test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
             # 시각화를 위한 tensorboard 초기화
-            writer_train = SummaryWriter(f'./logs/{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold')
-            writer_test =  SummaryWriter(f'./logs/{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold')
+            writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold'))
+            writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold'))
             x = torch.rand(1, 4242, device=device)
             writer_train.add_graph(my_model,x)
             writer_test.add_graph(my_model,x)
