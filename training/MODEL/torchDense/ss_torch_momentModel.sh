@@ -12,6 +12,6 @@
 # https://www.bu.edu/tech/support/research/system-usage/running-jobs/batch-script-examples/#MEMORY
 
 module load miniconda/4.9.2
-conda activate torch
+conda activate imu
 
 python torch_momentModel.py

@@ -23,12 +23,13 @@ def seed_everything(seed: int = 42):
 #### 설정 영역
 modelVersion = 'Dense_1st'
 nameDataset = 'IWALQQ_2nd'
-goal = 'angle'
+goal = 'angle' # or moBWHT
 # 데이터 셋 준비
-relativeDir = '../preperation/SAVE_dataSet'
-dataSetDir = join(relativeDir,nameDataset)
+absDataDir = r'/restricted/project/movelab/bcha/IMUforKnee/preperation/SAVE_dataSet'
+dataSetDir = join(absDataDir,nameDataset)
 # 학습된 모델은 백업안하는 공간에서 저장하기
-SaveDir = '/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel/'
+SaveDir = r'/restricted/projectnb/movelab/bcha/IMUforKnee/trainedModel'
+logDir = r'/restricted/project/movelab/bcha/IMUforKnee/training/logs'
 # epochs
 epochs = 1000
 # Model 생성, compile
@@ -151,7 +152,7 @@ def Z_Axis_RMSE_pct(y_true, y_pred):
 
 for numFold in range(0,5): # 5-fold crossvalidation
     # 각 fold 별로 별도로 표기하기
-    log_dir = join("logs","fit",modelVersion,nameDataset,time +'_'+ str(numFold) + '_fold_' + goal)
+    log_dir = join(logDir,"fit",modelVersion,nameDataset,time +'_'+ str(numFold) + '_fold_' + goal)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     print(f"Num of Fold: {numFold}")
     # 데이터 불러오기
