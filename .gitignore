@@ -2,6 +2,7 @@ training/DATASET/
 training/logs/
 training/result_qsub/
 training/model_scripted.pt
+training/MODEL/Pytorch_AE_LSTM/StudyRoom/data
 
 preperation/NORM
 preperation/NORM_CORRECTION
