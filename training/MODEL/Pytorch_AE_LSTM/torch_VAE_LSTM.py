@@ -4,37 +4,29 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from torchvision import models
-from pytorch_model_summary import summary
 
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-
-import os
 from os.path import join
-from pickle import load
 from tqdm import tqdm
-import random
 import datetime
 
 from vaelstm import *
-from CBDtorch.custom import Dataset
+from CBDtorch.custom import Dataset4autoencoder
 from CBDtorch.dirs import *
 
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = 'torch_20220511'  # 실험 이름 혹은 오늘 날짜
-modelVersion = 'Dense_1st_torch'
+exp_name = 'tor_vaelstm_20220520'  # 실험 이름 혹은 오늘 날짜
+modelVersion = 'vaelstm_1st_torch'
 nameDataset = 'IWALQQ_AE_1st'
-dataType = 'angle'  # or moBWHT
+dataType = 'angle' # VAE 나 AE 모델에서는 안중요하지만 추후 모델 predict일 때 편하게 하기 위해서 패킹을 이렇게 해둠
 
-# 데이터 feature 정보
+# 데이터 feature 정보, 추후에 자동화가 필요할랑가?
 seq_len = 101
 num_features = 42
 #################################
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
-list_embedding_dim = {0: 30, } 
+list_embedding_dim = {0: 30,} 
 list_learningRate = {0: 0.006}  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "VAE"}  # opt2
@@ -55,7 +47,6 @@ logDir = r'/restricted/project/movelab/bcha/IMUforKnee/training/logs'
 ############################
 # cuda or cpu?
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 
 # grid search 시, 현재의 count
 count = 0
@@ -80,26 +71,24 @@ for opt1 in range(0,len(list_learningRate)):
                 # loss function and optimizer define
                 optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
 
-                angle_train = Dataset(dataSetDir, dataType, 'train',numFold)
-                angle_test  = Dataset(dataSetDir, dataType, 'test', numFold)
+                angle_train = Dataset4autoencoder(dataSetDir, dataType, 'train',numFold)
+                angle_test  = Dataset4autoencoder(dataSetDir, dataType, 'test', numFold)
                 train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
                 test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
                 # 시각화를 위한 tensorboard 초기화
-                writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold'))
-                writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold'))
+                writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/train/{numFold}_fold'))
+                writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/test/{numFold}_fold'))
                 x = torch.rand(seq_len, num_features, device=device)
                 writer_train.add_graph(my_model,x)
                 writer_test.add_graph(my_model,x)
 
-                # 학습시작 전 metric용 scaler 불러오기
-                load_scaler4Y = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_{dataType}.pkl"), 'rb'))
                 for epoch in range(epochs):
                     # train session
                     my_model.train()
                     train_loss = 0
-                    for batch_idx, (data, target) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
-                        data, target = data.to(device), target.to(device)
+                    for batch_idx, (data, _) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
+                        data = data.to(device)
                         optimizer.zero_grad()
                         output = my_model(data)
                         loss =  ((data - output)**2).sum() + my_model.encoder.kl 
