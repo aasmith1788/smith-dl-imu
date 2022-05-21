@@ -27,13 +27,13 @@ num_features = 42
 #################################
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
-list_embedding_dim = {0: 30,} 
+list_embedding_dim = {0: 30, 1:40, 2:50} 
 list_learningRate = {0: 0.006}  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "VAE"}  # opt2
 
 totalFold = 5  # total fold, I did 5-fold cross validation
-epochs = 5  # total epoch
+epochs = 10000  # total epoch
 log_interval = 10  # frequency for saving log file
 
 # 데이터 위치

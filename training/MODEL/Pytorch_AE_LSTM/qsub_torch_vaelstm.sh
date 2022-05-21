@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#$ -l h_rt=4:00:00
+#$ -l h_rt=10:00:00
 #$ -N vaelstm
 #$ -o ../../result_qsub/vaelstm/try_1st
 #$ -j y    
