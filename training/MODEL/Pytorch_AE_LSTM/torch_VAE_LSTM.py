@@ -33,7 +33,7 @@ list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "VAE"}  # opt2
 
 totalFold = 5  # total fold, I did 5-fold cross validation
-epochs = 1000  # total epoch
+epochs = 5  # total epoch
 log_interval = 10  # frequency for saving log file
 
 # 데이터 위치
@@ -126,6 +126,14 @@ for opt1 in range(0,len(list_learningRate)):
                 writer_test.close()
                 dir_save_torch = join(SaveDir,modelVersion,nameDataset)
                 ensure_dir(dir_save_torch)
-                model_scripted = torch.jit.script(my_model) # Export to TorchScript
-                model_scripted.save(join(dir_save_torch,f'{dataType}_{numFold}_fold.pt')) # Save
+                # 현재 아래 방법은 모델 저장이 안되는 단점이 있음
+                # model_scripted = torch.jit.script(my_model) # Export to TorchScript
+                # model_scripted.save(join(dir_save_torch,f'{dataType}_{numFold}_fold.pt')) # Save
+
+                # 수정된 방법
+                torch.save(my_model, join(dir_save_torch,f'{dataType}_{numFold}_fold.pt'))
+                # 수정된 방법으로 모델 불러올 떄
+                # Model class must be defined somewhere
+                # model = torch.load(PATH)
+                # model.eval() # 항상 필요함!!! 모델을 불렀을 떄는 항상 넣기
 

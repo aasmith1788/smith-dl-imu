@@ -1,7 +1,6 @@
 #!/bin/bash -l
 
-# 1시간 30분짜리(넉넉하게 2시간) 학습 3개 
-#$ -l h_rt=2:00:00
+#$ -l h_rt=4:00:00
 #$ -N vaelstm
 #$ -o ../../result_qsub/vaelstm/try_1st
 #$ -j y    
