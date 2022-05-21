@@ -100,8 +100,8 @@ for opt1 in range(0,len(list_learningRate)):
                     test_loss = 0
                     my_model.eval()  # batch norm이나 dropout 등을 train mode 변환
                     with torch.no_grad():  # autograd engine, 즉 backpropagatin이나 gradient 계산 등을 꺼서 memory usage를 줄이고 속도를 높임
-                        for data, target in test_loader:
-                            data, target = data.to(device), target.to(device)
+                        for data in test_loader:
+                            data = data.to(device)
                             output = my_model(data)
                             loss =  ((data - output)**2).sum() + my_model.encoder.kl 
                             test_loss += loss.item() * data.size(0)
