@@ -39,8 +39,10 @@ class VariationalEncoder(nn.Module):
         self.kl = 0
 
     def forward(self, x):
+        print(f'input:{x.shape}')
         x, (_, _) = self.rnn1(x)
         x, (hidden_n, _) = self.rnn2(x)
+        print(f'afterlstm:{x.shape}')
         mu = self.mu(x[:, -1, :])
         sigma = torch.exp(self.sigma(x[:, -1, :]))
         z = mu + sigma*self.N.sample(mu.shape)

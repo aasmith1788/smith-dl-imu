@@ -65,7 +65,7 @@ for opt1 in range(0,len(list_learningRate)):
             for numFold  in range(totalFold):
                 print(f'now fold: {numFold}')
                 # 매 fold마다 새로운 모델
-                my_model = RecurrentVariationalAutoencoder()
+                my_model = RecurrentVariationalAutoencoder(seq_len, num_features, embedding_dim, device )
                 my_model.to(device)
                 
                 # loss function and optimizer define
@@ -79,7 +79,7 @@ for opt1 in range(0,len(list_learningRate)):
                 # 시각화를 위한 tensorboard 초기화
                 writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/train/{numFold}_fold'))
                 writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/test/{numFold}_fold'))
-                x = torch.rand(seq_len, num_features, device=device)
+                x = torch.zeros(32, 101, 42)
                 writer_train.add_graph(my_model,x)
                 writer_test.add_graph(my_model,x)
 
@@ -87,7 +87,8 @@ for opt1 in range(0,len(list_learningRate)):
                     # train session
                     my_model.train()
                     train_loss = 0
-                    for batch_idx, (data, _) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
+                    for batch_idx, (data) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
+                        print(f'datainput shape:{data.shape}')
                         data = data.to(device)
                         optimizer.zero_grad()
                         output = my_model(data)
