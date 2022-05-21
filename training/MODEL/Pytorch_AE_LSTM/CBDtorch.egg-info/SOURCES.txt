@@ -1,6 +1,7 @@
 setup.py
 CBDtorch/__init__.py
 CBDtorch/dirs.py
+CBDtorch/vaelstm.py
 CBDtorch.egg-info/PKG-INFO
 CBDtorch.egg-info/SOURCES.txt
 CBDtorch.egg-info/dependency_links.txt

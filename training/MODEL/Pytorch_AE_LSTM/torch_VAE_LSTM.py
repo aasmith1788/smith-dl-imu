@@ -10,7 +10,7 @@ from os.path import join
 from tqdm import tqdm
 import datetime
 
-from vaelstm import *
+from CBDtorch.vaelstm import *
 from CBDtorch.custom import Dataset4autoencoder
 from CBDtorch.dirs import *
 
