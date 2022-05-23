@@ -7,20 +7,23 @@ from torch.testing import make_tensor
 from torch.utils.tensorboard import SummaryWriter
 
 from os.path import join
+from pickle import load
 from tqdm import tqdm
 import datetime
 
 from CBDtorch.vaelstm import *
-from CBDtorch.custom import Dataset4autoencoder
+from CBDtorch.dense import *
+from CBDtorch.custom import Dataset4regressor
 from CBDtorch.dirs import *
-
+from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = 'tor_vaelstm_20220520'  # 실험 이름 혹은 오늘 날짜
-modelVersion = 'vaelstm_1st_torch'
+exp_name = 'tor_denseRg_20220520'  # 실험 이름 혹은 오늘 날짜
+modelVersion = 'DenseRegressor_1st_torch'
+# 이모델에서 사용할 vaelstm 모델 이름
+vae_ModelVersion = 'vaelstm_1st_torch'
 nameDataset = 'IWALQQ_AE_1st'
-dataType = 'angle' # VAE 나 AE 모델에서는 안중요하지만 추후 모델 predict일 때 편하게 하기 위해서 패킹을 이렇게 해둠
-
+dataType = 'angle' # moBWHT
 # 데이터 feature 정보, 추후에 자동화가 필요할랑가?
 seq_len = 101
 num_features = 42
@@ -30,7 +33,7 @@ num_features = 42
 list_embedding_dim = {0: 30, 1:40, 2:50} 
 list_learningRate = {0: 0.006}  # opt1
 list_batch_size = {0: 128}  # opt2
-list_lossFunction = {0: "VAE"}  # opt2
+list_lossFunction = {0: "MAE"}  # opt2
 
 totalFold = 5  # total fold, I did 5-fold cross validation
 epochs = 10000  # total epoch
@@ -66,14 +69,17 @@ for opt1 in range(0,len(list_learningRate)):
             for numFold  in range(totalFold):
                 print(f'now fold: {numFold}')
                 # 매 fold마다 새로운 모델
-                my_model = RecurrentVariationalAutoencoder(seq_len, num_features, embedding_dim, device)
+                # 학습된 VAE 불러오기
+                dir_savedVAE = join(SaveDir,vae_ModelVersion,nameDataset)
+                loadmodelname = join(dir_savedVAE,f'{dataType}_{embedding_dim}_{numFold}_fold')
+                my_model = regressor(loadmodelname, embedding_dim, seq_len, num_features, embedding_dim, device)
                 my_model.to(device)
                 
                 # loss function and optimizer define
-                optimizer = torch.optim.NAdam(my_model.parameters(),lr=learningRate)
+                optimizer = torch.optim.NAdam(my_model.dense.parameters(),lr=learningRate)
 
-                angle_train = Dataset4autoencoder(dataSetDir, dataType, 'train',numFold)
-                angle_test  = Dataset4autoencoder(dataSetDir, dataType, 'test', numFold)
+                angle_train = Dataset4regressor(dataSetDir, dataType, 'train',numFold)
+                angle_test  = Dataset4regressor(dataSetDir, dataType, 'test', numFold)
                 train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
                 test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
@@ -81,45 +87,82 @@ for opt1 in range(0,len(list_learningRate)):
                 writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/train/{numFold}_fold'))
                 writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/test/{numFold}_fold'))
 
+                load_scaler4Y = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_{dataType}.pkl"), 'rb'))
                 for epoch in range(epochs):
                     # train session
                     my_model.train()
                     train_loss = 0
-                    for batch_idx, (data) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
+                    train_x_nRMSE = 0
+                    train_y_nRMSE = 0
+                    train_z_nRMSE = 0
+                    for batch_idx, (data, target) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
                         # print(f'datainput shape:{data.shape}')
-                        data = data.to(device)
+                        data, target = data.to(device), target.to(device)
                         optimizer.zero_grad()
                         output = my_model(data)
-                        loss =  ((data - output)**2).sum() + my_model.encoder.kl 
+                        criterion = nn.L1Loss()
+                        loss = criterion(output, target)
                         loss.backward()
                         optimizer.step()
                         train_loss += loss.item() * data.size(0) # 이것은 모든 배치의 크기가 일정하지 않을 수 있기 때문에 이렇게 수행함! train_loss는 total loss of batch가 됨
-                    train_loss /= len(train_loader.sampler)            
-                    writer_train.add_scalar('loss(VAE)', train_loss, epoch)
+                        train_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                        train_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                        train_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                                
+                    train_loss /= len(train_loader.sampler)
+                    train_x_nRMSE /= len(train_loader.sampler) 
+                    train_y_nRMSE /= len(train_loader.sampler) 
+                    train_z_nRMSE /= len(train_loader.sampler) 
+
+                    writer_train.add_scalar('loss(MAE)', train_loss, epoch)
+                    writer_train.add_scalar(f'{dataType}_X_nRMSE', train_x_nRMSE, epoch)
+                    writer_train.add_scalar(f'{dataType}_Y_nRMSE', train_y_nRMSE, epoch)
+                    writer_train.add_scalar(f'{dataType}_Z_nRMSE', train_z_nRMSE, epoch)
+                    
                     # test session
                     test_loss = 0
+                    test_x_nRMSE = 0
+                    test_y_nRMSE = 0
+                    test_z_nRMSE = 0
                     my_model.eval()  # batch norm이나 dropout 등을 train mode 변환
                     with torch.no_grad():  # autograd engine, 즉 backpropagatin이나 gradient 계산 등을 꺼서 memory usage를 줄이고 속도를 높임
-                        for data in test_loader:
-                            data = data.to(device)
+                        for data, target in test_loader:
+                            data, target = data.to(device), target.to(device)
                             output = my_model(data)
-                            loss =  ((data - output)**2).sum() + my_model.encoder.kl 
+                            loss = criterion(output,target)
                             test_loss += loss.item() * data.size(0)
+                            test_x_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'x', load_scaler4Y).item()# 해당 배치에서의 총 loss의 합
+                            test_y_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'y', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합
+                            test_z_nRMSE += nRMSE_Axis_TLPerbatch(output,target, 'z', load_scaler4Y).item() # 해당 배치에서의 총 loss의 합             
+
                         test_loss /= len(test_loader.sampler)
-                        writer_test.add_scalar('loss(VAE)', test_loss, epoch)
+                        test_x_nRMSE /= len(test_loader.sampler) 
+                        test_y_nRMSE /= len(test_loader.sampler) 
+                        test_z_nRMSE /= len(test_loader.sampler)
 
+                        writer_test.add_scalar('loss(MAE)', test_loss, epoch)
+                        writer_test.add_scalar(f'{dataType}_X_nRMSE', test_x_nRMSE, epoch)
+                        writer_test.add_scalar(f'{dataType}_Y_nRMSE', test_y_nRMSE, epoch)
+                        writer_test.add_scalar(f'{dataType}_Z_nRMSE', test_z_nRMSE, epoch)
 
-                    print(f'\nTrain set: Average loss: {train_loss:.4f}, test set: Average loss: {test_loss:.4f}')
+                    print(f'\nTrain set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE}, Y_nRMSE: {train_y_nRMSE}, Z_nRMSE: {train_z_nRMSE}'
+                        +f'\nTest set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE}, Y_nRMSE: {test_y_nRMSE}, Z_nRMSE: {test_z_nRMSE}')
                 writer_train.add_hparams(
                         {"sess": "train", "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset , 'lossFunc':lossFunction, 'emb_dim': embedding_dim}, 
                         { 
                             "loss": train_loss,
+                            'X_nRMSE':train_x_nRMSE,
+                            'Y_nRMSE':train_y_nRMSE,
+                            'Z_nRMSE':train_z_nRMSE,
                         }, 
                     ) 
                 writer_test.add_hparams(
                         {"sess": "test",  "Type": dataType, "lr": learningRate, "bsize": batch_size, "DS":nameDataset, 'lossFunc':lossFunction, 'emb_dim': embedding_dim}, 
                         { 
                             "loss": test_loss,
+                            'X_nRMSE':test_x_nRMSE,
+                            'Y_nRMSE':test_y_nRMSE,
+                            'Z_nRMSE':test_z_nRMSE,
                         }, 
                     ) 
                 writer_train.close()
@@ -136,4 +179,3 @@ for opt1 in range(0,len(list_learningRate)):
                 # Model class must be defined somewhere
                 # model.load_state_dict(torch.load(filepath))
                 # model.eval()
-

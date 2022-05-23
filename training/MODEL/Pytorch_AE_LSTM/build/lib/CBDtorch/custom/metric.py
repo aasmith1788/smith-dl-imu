@@ -1,3 +1,5 @@
+import torch
+
 def nRMSE_Axis_TLPerbatch(pred, target,axis,load_scaler4Y, device):
     dict_axis = {
     'x': 0,
