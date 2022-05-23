@@ -7,3 +7,6 @@ training/MODEL/Pytorch_AE_LSTM/StudyRoom/data
 preperation/NORM
 preperation/NORM_CORRECTION
 preperation/SAVE_dataSet
+
+*.egg
+*.pyc

@@ -8,7 +8,10 @@ class Dataset4predictor(torch.utils.data.Dataset):
       self.sess = sess # train or test
       self.load_Data_X = torch.from_numpy(np.load(join(dataSetDir,f"{str(numFold)}_fold_final_{sess}.npz"))[f'final_X_{self.sess}'])
       self.load_Data_Y = torch.from_numpy(np.load(join(dataSetDir,f"{str(numFold)}_fold_final_{sess}.npz"))[f'final_Y_{self.dataType}_{self.sess}'])
-      
+      # regressor는 Dense layer이므로, AE 데이터 셋을 dense 용으로 만들어줘야함
+      # 3 * 101 => 1 * 303
+      self.load_Data_Y = np.reshape(self.load_Data_Y, newshape=(-1,self.load_Data_Y.shape[1]*self.load_Data_Y.shape[2],1), order='F')
+    
       self.load_Data_X = torch.squeeze(self.load_Data_X.type(torch.FloatTensor))
       self.load_Data_Y = torch.squeeze(self.load_Data_Y.type(torch.FloatTensor))
       
