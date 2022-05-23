@@ -131,9 +131,9 @@ for opt1 in range(0,len(list_learningRate)):
                 # model_scripted.save(join(dir_save_torch,f'{dataType}_{numFold}_fold.pt')) # Save
 
                 # 수정된 방법
-                torch.save(my_model, join(dir_save_torch,f'{dataType}_{numFold}_fold.pt'))
+                torch.save(my_model.state_dict(), join(dir_save_torch,f'{dataType}_{embedding_dim}_{numFold}_fold')) # 모델 정의가 필요함
                 # 수정된 방법으로 모델 불러올 떄
                 # Model class must be defined somewhere
-                # model = torch.load(PATH)
-                # model.eval() # 항상 필요함!!! 모델을 불렀을 떄는 항상 넣기
+                # model.load_state_dict(torch.load(filepath))
+                # model.eval()
 
