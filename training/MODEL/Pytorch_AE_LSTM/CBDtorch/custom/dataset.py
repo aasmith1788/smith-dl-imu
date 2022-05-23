@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from os.path import join
 
-class Dataset4predictor(torch.utils.data.Dataset): 
+class Dataset4regressor(torch.utils.data.Dataset): 
   def __init__(self, dataSetDir, dataType, sess, numFold):
       self.dataType = dataType # angle or moBWHT
       self.sess = sess # train or test
