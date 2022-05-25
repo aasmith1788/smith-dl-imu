@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
-#$ -l h_rt=10:00:00
+#$ -l h_rt=8:00:00
 #$ -N vaelstm
-#$ -o ../../result_qsub/vaelstm/try_1st
+#$ -o ../../result_qsub/vaelstm/try_2st
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
