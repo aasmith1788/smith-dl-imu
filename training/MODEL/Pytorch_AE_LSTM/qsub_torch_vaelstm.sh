@@ -2,7 +2,7 @@
 
 #$ -l h_rt=8:00:00
 #$ -N vaelstm
-#$ -o ../../result_qsub/vaelstm/try_2st
+#$ -o ../../result_qsub/vaelstm/try_3rd
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
