@@ -13,7 +13,7 @@ class VariationalEncoder(nn.Module):
         self.rnn1 = nn.LSTM(
             input_size=n_features,
             hidden_size=self.hidden_dim,
-            num_layers=1,
+            num_layers=2,
             batch_first=True,
             bidirectional=True
         )
@@ -78,7 +78,7 @@ class Decoder(nn.Module):
         self.rnn2 = nn.LSTM(
           input_size=input_dim * 2,
           hidden_size=self.hidden_dim,
-          num_layers=1,
+          num_layers=2,
           batch_first=True,
           bidirectional = True
         )

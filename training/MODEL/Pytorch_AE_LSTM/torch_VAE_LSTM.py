@@ -27,13 +27,13 @@ num_features = 42
 #################################
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
-list_embedding_dim = {0:30, 1:40, 2:50, 3:60, 4:70} 
-list_learningRate = {0: 0.001}  # opt1
+list_embedding_dim = {0:10, 0:20, 0:30, 1:40, 2:50, 3:60, 4:70} 
+list_learningRate = {0: 0.0008}  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "VAE"}  # opt2
 
 totalFold = 5  # total fold, I did 5-fold cross validation
-epochs = 2000  # total epoch
+epochs = 3000  # total epoch
 log_interval = 10  # frequency for saving log file
 
 # 데이터 위치
@@ -81,6 +81,11 @@ for opt1 in range(0,len(list_learningRate)):
                     # 시각화를 위한 tensorboard 초기화
                     writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/train/{numFold}_fold'))
                     writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/test/{numFold}_fold'))
+                    # 데이터 그래프 기록
+                    my_model.eval()
+                    x = torch.randn(1 ,seq_len, num_features, device=device)
+                    writer_train.add_graph(my_model,x)
+                    writer_test.add_graph(my_model,x)
 
                     for epoch in range(epochs):
                         # train session
