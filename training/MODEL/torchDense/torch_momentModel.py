@@ -14,6 +14,7 @@ import random
 import datetime
 
 ######### 설정 영역 ########
+exp_name = 'date_Dense_1st_torch'
 modelVersion = 'Dense_1st_torch'
 nameDataset = 'IWALQQ_1st_correction'
 dataType = 'moBWHT' # or moBWHT
