@@ -27,7 +27,7 @@ num_features = 42
 #################################
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
-list_embedding_dim = {0:10, 0:20, 0:30, 1:40, 2:50, 3:60, 4:70} 
+list_embedding_dim = [10, 20, 60, 70, 80] # {0:10, 0:20, 0:30, 1:40, 2:50, 3:60, 4:70} 
 list_learningRate = {0: 0.0008}  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "VAE"}  # opt2
