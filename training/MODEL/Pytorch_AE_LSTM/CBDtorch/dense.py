@@ -4,8 +4,9 @@ from CBDtorch.vaelstm import *
 class regressor(nn.Module):
     def __init__(self,filename,emb_dims,*args):
         super().__init__()
-        self.VAE = VariationalEncoder(*args)
+        self.VAE = RecurrentVariationalAutoencoder(*args)
         self.VAE.load_state_dict(torch.load(filename))
+
         self.dense = nn.Sequential(nn.Linear(emb_dims,2048),
                                         nn.ReLU(),
                                         nn.Dropout(p=0.5),  # 노드를 학습과정에서 얼만큼 활용 안할지
@@ -25,6 +26,6 @@ class regressor(nn.Module):
                                         )
         ##You can use as many linear layers and other activations as you want
     def forward(self, x):
-        x = self.VAE(x)
+        x = self.VAE.encoder(x)
         output = self.dense(x)
         return output

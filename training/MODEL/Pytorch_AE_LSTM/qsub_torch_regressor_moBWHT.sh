@@ -13,4 +13,4 @@
 
 module load miniconda/4.9.2
 conda activate imu
-python qsub_torch_regressor_moBWHT.py
+python torch_regression_moBWHT.py
