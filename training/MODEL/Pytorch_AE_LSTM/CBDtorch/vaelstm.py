@@ -96,7 +96,7 @@ class Decoder(nn.Module):
 
 # main module
 class RecurrentVariationalAutoencoder(nn.Module):
-    def __init__(self, seq_len, n_features, embedding_dim=30, device='cuda'):
+    def __init__(self, seq_len, n_features, embedding_dim, device='cuda'):
         super(RecurrentVariationalAutoencoder, self).__init__()
         self.encoder = VariationalEncoder(seq_len, n_features, embedding_dim, device).to(device)
         self.decoder = Decoder(seq_len, embedding_dim, n_features).to(device)
