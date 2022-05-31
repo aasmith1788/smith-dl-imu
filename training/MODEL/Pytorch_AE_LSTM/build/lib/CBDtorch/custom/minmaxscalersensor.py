@@ -1,4 +1,5 @@
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 
 class MinMaxScalerSensor(MinMaxScaler):
     def fit(self, X, y=None):
