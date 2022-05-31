@@ -11,7 +11,7 @@ from pickle import load
 from tqdm import tqdm
 import datetime
 
-from CBDtorch.vaelstm import *
+from CBDtorch.vaelstm_2layer import *
 from CBDtorch.dense import *
 from CBDtorch.custom import Dataset4regressor
 from CBDtorch.custom import MinMaxScalerSensor
