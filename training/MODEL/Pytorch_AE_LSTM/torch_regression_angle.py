@@ -91,6 +91,12 @@ for opt1 in range(0,len(list_learningRate)):
                     writer_test =  SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/test/{numFold}_fold'))
 
                     load_scaler4Y = load(open(join(dataSetDir,f"{numFold}_fold_scaler4Y_{dataType}.pkl"), 'rb'))
+                                        # 데이터 그래프 기록
+                    my_model.eval()
+                    x = torch.randn(1 ,seq_len, num_features, device=device)
+                    writer_train.add_graph(my_model,x)
+                    writer_test.add_graph(my_model,x)
+                    
                     for epoch in range(epochs):
                         # train session
                         my_model.train()
