@@ -19,7 +19,7 @@ from CBDtorch.dirs import *
 from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = 'tor_denseRg_20220527'  # 실험 이름 혹은 오늘 날짜
+exp_name = 'tor_denseRg_20220531'  # 실험 이름 혹은 오늘 날짜
 modelVersion = 'DenseRegressor_1st_torch'
 # 이모델에서 사용할 vaelstm 모델 이름
 vae_ModelVersion = 'vaelstm_1st_torch'
@@ -32,8 +32,8 @@ num_features = 42
 #################################
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
-list_embedding_dim = [30, 40, 50, 60, 70, 80]
-list_learningRate = {0: 0.004}  # opt1
+list_embedding_dim = [10]
+list_learningRate = [0.0005, 0.001, 0.002]  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "MAE"}  # opt2
 

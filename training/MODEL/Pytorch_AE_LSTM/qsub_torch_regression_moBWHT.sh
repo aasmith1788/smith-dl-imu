@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
-#$ -l h_rt=48:00:00
+#$ -l h_rt=20:00:00
 #$ -N regmo
-#$ -o ../../result_qsub/regmo/try_2nd
+#$ -o ../../result_qsub/regmo/try_3rd
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
