@@ -10,14 +10,14 @@ from os.path import join
 from tqdm import tqdm
 import datetime
 
-from CBDtorch.vaelstm import *
+from CBDtorch.vaelstm_3layer import * #항상 layer 숫자 확인하고 기록하기
 from CBDtorch.custom import Dataset4autoencoder
 from CBDtorch.dirs import *
 
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = 'tor_vaelstm_20220526'  # 실험 이름 혹은 오늘 날짜
-modelVersion = 'vaelstm_1st_torch'
+exp_name = 'tor_vaelstm_20220531'  # 실험 이름 혹은 오늘 날짜
+modelVersion = 'vaelstm_2nd_torch'
 nameDataset = 'IWALQQ_AE_1st'
 dataType = 'angle' # VAE 나 AE 모델에서는 안중요하지만 추후 모델 predict일 때 편하게 하기 위해서 패킹을 이렇게 해둠
 
@@ -27,7 +27,7 @@ num_features = 42
 #################################
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
-list_embedding_dim = [10, 20, 60, 70, 80] # {0:10, 0:20, 0:30, 1:40, 2:50, 3:60, 4:70} 
+list_embedding_dim = [10, 20, 30, 40, 50, 60, 70, 80] # {0:10, 0:20, 0:30, 1:40, 2:50, 3:60, 4:70} 
 list_learningRate = {0: 0.0008}  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "VAE"}  # opt2
