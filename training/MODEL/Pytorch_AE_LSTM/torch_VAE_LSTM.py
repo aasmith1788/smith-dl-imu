@@ -10,7 +10,7 @@ from os.path import join
 from tqdm import tqdm
 import datetime
 
-from CBDtorch.vaelstm_3layer import * #항상 layer 숫자 확인하고 기록하기
+from CBDtorch.vaelstm_1layer import * #항상 layer 숫자 확인하고 기록하기
 from CBDtorch.custom import Dataset4autoencoder
 from CBDtorch.dirs import *
 
