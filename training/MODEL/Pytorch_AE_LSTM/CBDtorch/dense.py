@@ -1,6 +1,5 @@
 # 메인 아이디어
-from CBDtorch.vaelstm import *
-
+from CBDtorch.vaelstm_2layer import *
 class regressor(nn.Module):
     def __init__(self,filename,emb_dims,*args):
         super().__init__()
