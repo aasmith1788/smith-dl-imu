@@ -1,5 +1,5 @@
 # 메인 아이디어
-from CBDtorch.vaelstm_2layer import * # VAE_LSTM layer바꿀 때 이것도 바꿀 것
+from CBDtorch.vaelstm_3layer import * # VAE_LSTM layer바꿀 때 이것도 바꿀 것
 class regressor(nn.Module):
     def __init__(self,filename,emb_dims,*args):
         super().__init__()

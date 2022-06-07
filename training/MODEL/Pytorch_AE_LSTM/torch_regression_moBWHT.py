@@ -18,10 +18,10 @@ from CBDtorch.dirs import *
 from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = 'tor_denseRg_20220531'  # 실험 이름 혹은 오늘 날짜
-modelVersion = 'DenseRegressor_1st_torch'
+exp_name = 'tor_denseRg_20220607'  # 실험 이름 혹은 오늘 날짜
+modelVersion = 'DenseRegressor_2nd_torch'
 # 이모델에서 사용할 vaelstm 모델 이름
-vae_ModelVersion = 'vaelstm_1st_torch'
+vae_ModelVersion = 'vaelstm_3rd_torch'
 nameDataset = 'IWALQQ_AE_1st'
 load_dataType = 'angle'
 dataType = 'moBWHT' # moBWHT
@@ -32,7 +32,7 @@ num_features = 42
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
 list_embedding_dim = [10]
-list_learningRate = [0.0005, 0.001, 0.002]  # opt1
+list_learningRate = [0.001]  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "MAE"}  # opt2
 
@@ -80,10 +80,10 @@ for opt1 in range(0,len(list_learningRate)):
                     # loss function and optimizer define
                     optimizer = torch.optim.NAdam(my_model.dense.parameters(),lr=learningRate)
 
-                    angle_train = Dataset4regressor(dataSetDir, dataType, 'train',numFold)
-                    angle_test  = Dataset4regressor(dataSetDir, dataType, 'test', numFold)
-                    train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
-                    test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
+                    data_train = Dataset4regressor(dataSetDir, dataType, 'train',numFold)
+                    data_test  = Dataset4regressor(dataSetDir, dataType, 'test', numFold)
+                    train_loader = DataLoader(data_train, batch_size=batch_size, shuffle=True)
+                    test_loader = DataLoader(data_test, batch_size=batch_size, shuffle=True)
 
                     # 시각화를 위한 tensorboard 초기화
                     writer_train = SummaryWriter(join(logDir,f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/train/{numFold}_fold'))
