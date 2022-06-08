@@ -2,7 +2,7 @@
 
 #$ -l h_rt=30:00:00
 #$ -N vaelstm
-#$ -o ../../result_qsub/vaelstm/try_6th_1layer_vae
+#$ -o ../../result_qsub/vaelstm/try_7th_1layer_vae
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
