@@ -1,6 +1,7 @@
 #!/bin/bash -l
 
-#$ -l h_rt=30:00:00
+# 보통 torch_VAE_LSTM.py는 1개 돌리는데 1시간 정도 걸리는듯함.
+#$ -l h_rt=15:00:00
 #$ -N vaelstm
 #$ -o ../../result_qsub/vaelstm/try_7th_1layer_vae
 #$ -j y    
