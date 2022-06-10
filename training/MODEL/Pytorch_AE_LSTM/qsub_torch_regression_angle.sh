@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
-#$ -l h_rt=48:00:00
+#$ -l h_rt=35:00:00
 #$ -N regAng
-#$ -o ../../result_qsub/regAng/20220609
+#$ -o ../../result_qsub/regAng/try_20220610_dense_woDG_첫번째데이터_1layer
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
