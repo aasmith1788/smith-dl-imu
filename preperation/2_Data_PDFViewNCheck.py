@@ -130,7 +130,7 @@ elif args.mode == 'CHK':
     print("||   KEY - FUNCTION   ||")
     print("|| 'w' - go next file || 'p' - terminate program ||")
     print("|| 'q' - for include  || 'e' - for exclude       ||")
-    print("|| 'c' - for postpone ||                         ||")
+    print("|| 's' - for postpone ||                         ||")
     num_trial = 0
     firstScene = True
     for datum in dataList:
