@@ -2,7 +2,7 @@
 
 #$ -l h_rt=33:00:00
 #$ -N RADG
-#$ -o ../../result_qsub/dgregAng/DG_try_20220610
+#$ -o ../../result_qsub/dgregAng/20220619_weightDecay
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1

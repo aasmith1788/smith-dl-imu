@@ -19,7 +19,7 @@ from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
 
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = "DG_tor_denseRg_20220610_vaelstm_1layer"  # 실험 이름 혹은 오늘 날짜
+exp_name = "DG_tor_denseRg_20220619_vaelstm_1layer_L2Reg"  # # 실험 이름 혹은 오늘 날짜
 modelVersion = "DG_DenseRegressor_1st_torch"
 # 이모델에서 사용할 vaelstm 모델 이름
 vae_ModelVersion = "vaelstm_3rd_torch"
@@ -32,7 +32,7 @@ num_features = 42
 #################################
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
-list_embedding_dim = [50, 60, 70, 80]
+list_embedding_dim = [5, 10, 20, 30, 40, 50, 60, 70, 80]
 list_learningRate = [0.001]  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "MAE"}  # opt2
@@ -91,7 +91,9 @@ for opt1 in range(0, len(list_learningRate)):
 
                     # loss function and optimizer define
                     optimizer = torch.optim.NAdam(
-                        my_model.dense.parameters(), lr=learningRate
+                        my_model.dense.parameters(),
+                        lr=learningRate,
+                        weight_decay=0.01,
                     )
 
                     data_train = DatasetWithDG4regressor(
