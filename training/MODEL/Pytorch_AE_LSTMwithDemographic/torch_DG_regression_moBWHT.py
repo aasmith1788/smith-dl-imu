@@ -36,6 +36,7 @@ list_embedding_dim = [5, 10, 20, 30, 40, 50, 60, 70, 80]
 list_learningRate = [0.002]  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "MAE"}  # opt2
+weight_decay = 0.005
 
 totalFold = 5  # total fold, I did 5-fold cross validation
 epochs = 3000  # total epoch
@@ -93,7 +94,7 @@ for opt1 in range(0, len(list_learningRate)):
                     optimizer = torch.optim.NAdam(
                         my_model.dense.parameters(),
                         lr=learningRate,
-                        weight_decay=0.01,
+                        weight_decay=weight_decay,
                     )
 
                     data_train = DatasetWithDG4regressor(
@@ -113,13 +114,13 @@ for opt1 in range(0, len(list_learningRate)):
                     writer_train = SummaryWriter(
                         join(
                             logDir,
-                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/train/{numFold}_fold",
+                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}_weightDecay_{weight_decay}/train/{numFold}_fold",
                         )
                     )
                     writer_test = SummaryWriter(
                         join(
                             logDir,
-                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/test/{numFold}_fold",
+                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}_weightDecay_{weight_decay}/test/{numFold}_fold",
                         )
                     )
 

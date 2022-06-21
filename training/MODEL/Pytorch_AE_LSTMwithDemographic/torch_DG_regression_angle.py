@@ -17,9 +17,9 @@ from CBDtorch.custom import MinMaxScalerSensor
 from CBDtorch.dirs import *
 from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
 
-######### 설정 영역 ########+
+######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = "DG_tor_denseRg_20220619_vaelstm_1layer_L2Reg"  # 실험 이름 혹은 오늘 날짜
+exp_name = "DG_tor_denseRg_20220619_vaelstm_1layer_L2Reg"  # # 실험 이름 혹은 오늘 날짜
 modelVersion = "DG_DenseRegressor_1st_torch"
 # 이모델에서 사용할 vaelstm 모델 이름
 vae_ModelVersion = "vaelstm_3rd_torch"
@@ -33,9 +33,10 @@ num_features = 42
 # 여기는 grid로 돌림! 이제 grid 포함이 default!
 #################################
 list_embedding_dim = [5, 10, 20, 30, 40, 50, 60, 70, 80]
-list_learningRate = [0.002]  # opt1
+list_learningRate = [0.001]  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "MAE"}  # opt2
+weight_decay = 0.005
 
 totalFold = 5  # total fold, I did 5-fold cross validation
 epochs = 3000  # total epoch
@@ -93,7 +94,7 @@ for opt1 in range(0, len(list_learningRate)):
                     optimizer = torch.optim.NAdam(
                         my_model.dense.parameters(),
                         lr=learningRate,
-                        weight_decay=0.01,
+                        weight_decay=weight_decay,
                     )
 
                     data_train = DatasetWithDG4regressor(
@@ -113,13 +114,13 @@ for opt1 in range(0, len(list_learningRate)):
                     writer_train = SummaryWriter(
                         join(
                             logDir,
-                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/train/{numFold}_fold",
+                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}_weightDecay_{weight_decay}/train/{numFold}_fold",
                         )
                     )
                     writer_test = SummaryWriter(
                         join(
                             logDir,
-                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}/test/{numFold}_fold",
+                            f"{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_embdim_{embedding_dim}_weightDecay_{weight_decay}/test/{numFold}_fold",
                         )
                     )
 
