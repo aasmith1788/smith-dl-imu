@@ -247,6 +247,7 @@ for opt1 in range(0, len(list_learningRate)):
                             "DS": nameDataset,
                             "lossFunc": lossFunction,
                             "emb_dim": embedding_dim,
+                            "weight_Decay": weight_decay,
                         },
                         {
                             "loss": train_loss,
@@ -264,6 +265,7 @@ for opt1 in range(0, len(list_learningRate)):
                             "DS": nameDataset,
                             "lossFunc": lossFunction,
                             "emb_dim": embedding_dim,
+                            "weight_Decay": weight_decay,
                         },
                         {
                             "loss": test_loss,
