@@ -36,7 +36,7 @@ list_embedding_dim = [5, 10, 20, 30, 40, 50, 60, 70, 80]
 list_learningRate = [0.001]  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "MAE"}  # opt2
-weight_decay = 0.005
+weight_decay = 0.001
 
 totalFold = 5  # total fold, I did 5-fold cross validation
 epochs = 3000  # total epoch
