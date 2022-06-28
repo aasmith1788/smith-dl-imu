@@ -16,9 +16,9 @@ from CBDtorch.dirs import *
 
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = 'tor_vaelstm_20220608_2번째데이터셋'  # 실험 이름 혹은 오늘 날짜
+exp_name = 'tor_vaelstm_20220628_IWALQQ_AE_4th'  # 실험 이름 혹은 오늘 날짜
 modelVersion = 'vaelstm_3rd_torch'
-nameDataset = 'IWALQQ_AE_2nd'
+nameDataset = 'IWALQQ_AE_4th'
 dataType = 'angle' # VAE 나 AE 모델에서는 안중요하지만 추후 모델 predict일 때 편하게 하기 위해서 패킹을 이렇게 해둠
 
 # 데이터 feature 정보, 추후에 자동화가 필요할랑가?
