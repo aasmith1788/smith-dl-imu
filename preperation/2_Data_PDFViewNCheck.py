@@ -54,7 +54,7 @@ args = parser.parse_args()
 # FIG에 있는 PDF 열고
 # Included_chekced 아래에 저장하기
 dataDir = r"Z:\PROJECTS\iwalqq\Data\V3D\Output\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero"
-rawDir = r"Z:\PROJECTS\iwalqq\Data\V3D\Output\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero\RAW"
+rawDir = r"Z:\PROJECTS\iwalqq\Data\V3D\Output\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero\RAW_AXIS_corrected"
 figDir = r"Z:\PROJECTS\iwalqq\Data\V3D\Output\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero\FIG"
 includeDir = r"Z:\PROJECTS\iwalqq\Data\V3D\Output\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero\Included_checked\RAW"
 excludeDir = r"Z:\PROJECTS\iwalqq\Data\V3D\Output\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero\EXC"
