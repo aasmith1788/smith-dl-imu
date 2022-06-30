@@ -1,8 +1,8 @@
 #!/bin/bash -l
 # 1셋당 8시간 걸리나..?
-#$ -l h_rt=48:00:00 
+#$ -l h_rt=24:00:00 
 #$ -N RA
-#$ -o ../../result_qsub/regAng/try_20220610_dense_woDG_첫번째데이터_1layer_add
+#$ -o ../../result_qsub/regAng/try_20220629_dense_woDG_첫번째데이터_1layer_add
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1

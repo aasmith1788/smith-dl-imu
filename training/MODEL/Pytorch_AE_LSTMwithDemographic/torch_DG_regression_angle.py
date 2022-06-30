@@ -39,7 +39,7 @@ list_lossFunction = {0: "MAE"}  # opt2
 weight_decay = 0.001 # 0.001 or 0.0005 둘 중 하나
 
 totalFold = 5  # total fold, I did 5-fold cross validation
-epochs = 1500  # total epoch
+epochs = 500  # total epoch
 log_interval = 10  # frequency for saving log file
 
 # 데이터 위치

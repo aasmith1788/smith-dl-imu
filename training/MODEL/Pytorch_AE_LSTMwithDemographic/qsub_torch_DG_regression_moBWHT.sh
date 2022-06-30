@@ -2,7 +2,7 @@
 
 #$ -l h_rt=24:00:00
 #$ -N RMDG
-#$ -o ../../result_qsub/dgregmo/20220628_weightDecay_0.001
+#$ -o ../../result_qsub/dgregmo/20220629_weightDecay_0.0005
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
