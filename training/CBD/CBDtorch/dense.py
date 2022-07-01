@@ -5,8 +5,12 @@ from CBDtorch.vaelstm_1layer import *  # VAE_LSTM layer바꿀 때 이것도 바�
 class regressor(nn.Module):
     def __init__(self, filename, emb_dims, *args):
         super().__init__()
+        if torch.cuda.is_available():
+            map_location = lambda storage, loc: storage.cuda()
+        else:
+            map_location = "cpu"
         self.VAE = RecurrentVariationalAutoencoder(*args)
-        self.VAE.load_state_dict(torch.load(filename))
+        self.VAE.load_state_dict(torch.load(filename,map_location=map_location))
 
         self.dense = nn.Sequential(
             nn.Linear(emb_dims, 2048),

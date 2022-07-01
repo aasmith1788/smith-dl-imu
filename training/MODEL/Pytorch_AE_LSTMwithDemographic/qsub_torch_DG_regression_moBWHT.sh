@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#$ -l h_rt=24:00:00
+#$ -l h_rt=4:00:00
 #$ -N RMDG
 #$ -o ../../result_qsub/dgregmo/20220630_weightDecay_0.0001
 #$ -j y    
