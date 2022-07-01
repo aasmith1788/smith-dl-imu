@@ -2,8 +2,8 @@
 
 # 1시간 30분짜리(넉넉하게 2시간) 학습 3개 
 #$ -l h_rt=5:00:00
-#$ -N Gtorch_angle
-#$ -o ../../result_qsub/angle/grid
+#$ -N Gang
+#$ -o ../../result_qsub/angle/id_IWALQQ_AE_4th
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1

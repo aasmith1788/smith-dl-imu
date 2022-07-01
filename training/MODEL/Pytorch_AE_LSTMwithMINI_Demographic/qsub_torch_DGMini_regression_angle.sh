@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
-#$ -l h_rt=2:00:00
+#$ -l h_rt=12:00:00
 #$ -N MNang
-#$ -o ../../result_qsub/miniDgRegAng/20220630_Decay_0.0
+#$ -o ../../result_qsub/miniDgRegAng/20220630_Decay_0.001
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1

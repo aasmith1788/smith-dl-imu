@@ -14,15 +14,15 @@ import random
 import datetime
 
 ######### 설정 영역 ########
-exp_name = 'torch_20220511' # 실험 이름 혹은 오늘 날짜
+exp_name = 'torch_20220630' # 실험 이름 혹은 오늘 날짜
 modelVersion = 'Dense_1st_torch'
-nameDataset = 'IWALQQ_AE_1st'
+nameDataset = 'IWALQQ_AE_4th'
 dataType = 'angle' # or moBWHT
 
 #################################
 # 여기는 grid로 돌림!
 #################################
-list_learningRate = {0:0.006, 1:0.008, 2:0.01} # opt1 
+list_learningRate = {0:0.006, 1:0.008, 2:0.01} # opt1 {0:0.006, 1:0.008, 2:0.01} 
 list_batch_size = {0:128} # opt2
 list_lossFunction =  {0:"MAE"} # opt2
 

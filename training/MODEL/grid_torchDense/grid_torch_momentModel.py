@@ -14,9 +14,9 @@ import random
 import datetime
 
 ######### 설정 영역 ########
-exp_name = 'torch_20220511' # 실험 이름 혹은 오늘 날짜
+exp_name = 'torch_20220630' # 실험 이름 혹은 오늘 날짜
 modelVersion = 'Dense_1st_torch'
-nameDataset = 'IWALQQ_AE_1st'
+nameDataset = 'IWALQQ_AE_4th'
 dataType = 'moBWHT' # or moBWHT
 
 #################################

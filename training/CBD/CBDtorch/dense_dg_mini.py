@@ -36,7 +36,7 @@ class regressor(nn.Module):
     def forward(self, x_imu, x_dg):
         compressed_features = self.VAE.encoder(x_imu)
         concated = torch.cat(
-            (compressed_features, x_dg), 0
+            (compressed_features, x_dg), 1 # 이거 dense에 넣는거라서 그냥 개수만 채워서 넣는걸로 했구나!! 차원이 필요가 없네
         )  # 압축 피처에 같은 축으로 3개만 더해보자
         output = self.dense(concated)
         return output
