@@ -1,9 +1,8 @@
 #!/bin/bash -l
 
-# 보통 torch_VAE_LSTM.py는 1개 돌리는데 1시간 정도 걸리는듯함.
-#$ -l h_rt=15:00:00
-#$ -N MOSTvae
-#$ -o ../../result_qsub/MOSTyle_vaelstm/20220631_IWALQQ_AE_MOSTyle_2nd
+#$ -l h_rt=4:00:00
+#$ -N MORMDG
+#$ -o ../../result_qsub/MOSTyle_dgregmo/20220705_weightDecay_0.0001
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
@@ -21,4 +20,4 @@ echo "=========================================================="
 
 module load miniconda/4.9.2
 conda activate imu
-python torch_MOSTyle_VAE_LSTM.py
+python torch_MOSTyle_DG_regression_moBWHT.py

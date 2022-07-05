@@ -1,9 +1,8 @@
 #!/bin/bash -l
-
 # 보통 torch_VAE_LSTM.py는 1개 돌리는데 1시간 정도 걸리는듯함.
 #$ -l h_rt=15:00:00
-#$ -N MOSTvae
-#$ -o ../../result_qsub/MOSTyle_vaelstm/20220631_IWALQQ_AE_MOSTyle_2nd
+#$ -N MOSTVL
+#$ -o ../../result_qsub/MOSTyle_vaelstm/20220705_IWALQQ_AE_MOSTyle_2nd
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
