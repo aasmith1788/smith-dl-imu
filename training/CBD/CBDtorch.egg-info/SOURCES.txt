@@ -2,6 +2,7 @@ setup.py
 CBDtorch/__init__.py
 CBDtorch/dense.py
 CBDtorch/dense_dg.py
+CBDtorch/dense_dg_experimental.py
 CBDtorch/dense_dg_mini.py
 CBDtorch/dirs.py
 CBDtorch/vaelstm_1layer.py
