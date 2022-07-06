@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#$ -l h_rt=4:00:00
+#$ -l h_rt=12:00:00
 #$ -N MORMDG
 #$ -o ../../result_qsub/MOSTyle_dgregmo/20220705_weightDecay_0.0001
 #$ -j y    
