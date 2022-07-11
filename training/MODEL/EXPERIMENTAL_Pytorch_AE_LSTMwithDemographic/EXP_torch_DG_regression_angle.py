@@ -19,8 +19,8 @@ from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
 
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = "EXP_try7_DG_tor_denseRg_20220706_vaelstm_1layer_4th"  # # 실험 이름 혹은 오늘 날짜
-modelVersion = "EXP_DG_DenseRegressor_1st_torch"  # weight_decay를 표시하기
+exp_name = "EXP_try12_DG_tor_denseRg_20220706_vaelstm_1layer_4th"  # # 실험 이름 혹은 오늘 날짜
+modelVersion = "EXP_try11_DG_DenseRegressor_1st_torch"  # weight_decay를 표시하기
 # 이모델에서 사용할 vaelstm 모델 이름
 vae_ModelVersion = "vaelstm_3rd_torch"
 nameDataset = "IWALQQ_AE_4th"
@@ -39,7 +39,7 @@ list_lossFunction = {0: "MAE"}  # opt2
 weight_decay = 0  # 0.001 or 0.0005 둘 중 하나
 
 totalFold = 5  # total fold, I did 5-fold cross validation
-epochs = 100  # total epoch
+epochs = 40  # total epoch
 log_interval = 10  # frequency for saving log file
 
 # 데이터 위치

@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
 # TODO: 학습 1회 돌린 이후에 학습시간 나오면 적용할 것
-#$ -l h_rt=1:30:00
+#$ -l h_rt=2:00:00
 #$ -N EXPRADG
-#$ -o ../../result_qsub/EXP_DG_ang/try3rd
+#$ -o ../../result_qsub/EXP_DG_ang/try12th
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
