@@ -4,29 +4,15 @@ import pandas as pd
 from natsort import natsorted
 from scipy.signal import argrelextrema
 
+import module.moment as m
 
-class Peak:
-    target = "moBWHT"
-    fileName = "TruePredDiff.xlsx"
-    saveDir = "Result_peak"
+
+class Peak(m.Moment):
     order = 30
 
     def __init__(self, name):
-        self.name = str(name)
-        self.dataDirs = None
-        self.results_True_X = None
-        self.results_Pred_X = None
-        self.results_True_Y = None
-        self.results_Pred_Y = None
-
-    def load(self):
-        self.dataDirs = natsorted(
-            [
-                os.path.join(path[0], path[2][0])
-                for path in list(os.walk(self.name))
-                if ((Peak.target in path[0]) and (Peak.fileName in path[2]))
-            ]
-        )
+        super().__init__(name)
+        self.saveDir = "Result_peak"
 
     def find_X(self, colData, results):
         ilocs_max = argrelextrema(colData.values, np.greater_equal, order=Peak.order)
@@ -119,23 +105,4 @@ class Peak:
             results, columns=["value_1", "timing_1", "value_2", "timing_2"]
         )
 
-    def save(self):
-        with pd.ExcelWriter(
-            os.path.join(Peak.saveDir, f"peak_{self.name}.xlsx"), engine="xlsxwriter"
-        ) as writer:
-            self.results_True_X.to_excel(
-                writer,
-                sheet_name="true_X",
-            )
-            self.results_Pred_X.to_excel(
-                writer,
-                sheet_name="pred_X",
-            )
-            self.results_True_Y.to_excel(
-                writer,
-                sheet_name="true_Y",
-            )
-            self.results_Pred_Y.to_excel(
-                writer,
-                sheet_name="pred_Y",
-            )
+    
