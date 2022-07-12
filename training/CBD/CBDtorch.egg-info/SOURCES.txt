@@ -15,5 +15,6 @@ CBDtorch.egg-info/top_level.txt
 CBDtorch/custom/__init__.py
 CBDtorch/custom/dataset.py
 CBDtorch/custom/metric.py
+CBDtorch/custom/metric_NOTSENSOR.py
 CBDtorch/custom/minmaxscalersensor.py
 CBDtorch/custom/rmseloss.py
