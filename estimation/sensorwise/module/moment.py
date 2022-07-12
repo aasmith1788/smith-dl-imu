@@ -21,7 +21,7 @@ class Moment:
     def load(self):
         self.dataDirs = natsorted(
             [
-                os.path.join(path[0], path[2][0])
+                os.path.join(path[0], Moment.fileName)
                 for path in list(os.walk(self.name))
                 if ((Moment.target in path[0]) and (Moment.fileName in path[2]))
             ]
