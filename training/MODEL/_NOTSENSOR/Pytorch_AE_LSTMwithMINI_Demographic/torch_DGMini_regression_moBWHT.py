@@ -15,15 +15,15 @@ from CBDtorch.dense_dg_mini import *
 from CBDtorch.custom import DatasetWithDG4regressor
 from CBDtorch.custom import MinMaxScalerSensor
 from CBDtorch.dirs import *
-from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
+from CBDtorch.custom.metric_NOTSENSOR import nRMSE_Axis_TLPerbatch
 
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = "DGMini_3rd4th"  # # 실험 이름 혹은 오늘 날짜
-modelVersion = "DG_DenseRegressor_1st_torch_mini_0.0005" #weight_decay를 표시하기
+exp_name = "NOTSENSOR_wDgMini"  # # 실험 이름 혹은 오늘 날짜
+modelVersion = "DG_DenseRegressor_1st_torch_mini_0.0005"  # weight_decay를 표시하기
 # 이모델에서 사용할 vaelstm 모델 이름
 vae_ModelVersion = "vaelstm_3rd_torch"
-nameDataset = "IWALQQ_AE_4th"
+nameDataset = "IWALQQ_AE_4th_NOTSENSOR"
 load_dataType = "angle"
 dataType = "moBWHT"  # moBWHT
 # 데이터 feature 정보, 추후에 자동화가 필요할랑가?
@@ -36,7 +36,7 @@ list_embedding_dim = [5, 10, 20, 30, 40, 50, 60, 70, 80]
 list_learningRate = [0.001]  # opt1
 list_batch_size = {0: 128}  # opt2
 list_lossFunction = {0: "MAE"}  # opt2
-weight_decay = 0.0005 # 0.001 or 0.0005 둘 중 하나
+weight_decay = 0.0005  # 0.001 or 0.0005 둘 중 하나
 
 totalFold = 5  # total fold, I did 5-fold cross validation
 epochs = 500  # total epoch

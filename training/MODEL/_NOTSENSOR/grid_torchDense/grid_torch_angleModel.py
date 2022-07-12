@@ -219,13 +219,13 @@ for opt1 in range(0, len(list_learningRate)):
                     )  # 이것은 모든 배치의 크기가 일정하지 않을 수 있기 때문에 이렇게 수행함! train_loss는 total loss of batch가 됨
 
                     train_x_nRMSE += nRMSE_Axis_TLPerbatch(
-                        output, target, "x", load_scaler4Y
+                        output, target, "x", load_scaler4Y, device
                     ).item()  # 해당 배치에서의 총 loss의 합
                     train_y_nRMSE += nRMSE_Axis_TLPerbatch(
-                        output, target, "y", load_scaler4Y
+                        output, target, "y", load_scaler4Y, device
                     ).item()  # 해당 배치에서의 총 loss의 합
                     train_z_nRMSE += nRMSE_Axis_TLPerbatch(
-                        output, target, "z", load_scaler4Y
+                        output, target, "z", load_scaler4Y, device
                     ).item()  # 해당 배치에서의 총 loss의 합
                     # if batch_idx % log_interval == 0:
                     #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -254,13 +254,13 @@ for opt1 in range(0, len(list_learningRate)):
                         loss = criterion(output, target)
                         test_loss += loss.item() * data.size(0)
                         test_x_nRMSE += nRMSE_Axis_TLPerbatch(
-                            output, target, "x", load_scaler4Y
+                            output, target, "x", load_scaler4Y, device
                         ).item()  # 해당 배치에서의 총 loss의 합
                         test_y_nRMSE += nRMSE_Axis_TLPerbatch(
-                            output, target, "y", load_scaler4Y
+                            output, target, "y", load_scaler4Y, device
                         ).item()  # 해당 배치에서의 총 loss의 합
                         test_z_nRMSE += nRMSE_Axis_TLPerbatch(
-                            output, target, "z", load_scaler4Y
+                            output, target, "z", load_scaler4Y, device
                         ).item()  # 해당 배치에서의 총 loss의 합
 
                     test_loss /= len(test_loader.sampler)

@@ -2,8 +2,8 @@
 
 # 1시간 30분짜리(넉넉하게 2시간) 학습 3개 
 #$ -l h_rt=5:00:00
-#$ -N Gmo
-#$ -o ../../result_qsub/moment/grid_IWALQQ_AE_4th
+#$ -N Dense_A
+#$ -o ../../../result_qsub/angle/NOTSENSOR
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
@@ -14,4 +14,4 @@
 
 module load miniconda/4.9.2
 conda activate imu
-python grid_torch_momentModel.py
+python grid_torch_angleModel.py

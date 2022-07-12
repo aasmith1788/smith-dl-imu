@@ -2,8 +2,8 @@
 
 # 보통 torch_VAE_LSTM.py는 1개 돌리는데 1시간 정도 걸리는듯함.
 #$ -l h_rt=15:00:00
-#$ -N VL_4th
-#$ -o ../../result_qsub/vaelstm/20220628_IWALQQ_AE_4th
+#$ -N VL
+#$ -o ../../../result_qsub/vaelstm/NOTSENSOR
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1

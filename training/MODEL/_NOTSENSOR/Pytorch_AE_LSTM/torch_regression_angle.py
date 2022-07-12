@@ -15,15 +15,15 @@ from CBDtorch.dense import *
 from CBDtorch.custom import Dataset4regressor
 from CBDtorch.custom import MinMaxScalerSensor
 from CBDtorch.dirs import *
-from CBDtorch.custom.metric import nRMSE_Axis_TLPerbatch
+from CBDtorch.custom.metric_NOTSENSOR import nRMSE_Axis_TLPerbatch
 
 ######### 설정 영역 ########
 # 실험 관련 세팅
-exp_name = "tor_denseRg_20220629_LSTM1layer_4번째데이터셋"  # 실험 이름 혹은 오늘 날짜
+exp_name = "NOTSENSOR_woDg"  # 실험 이름 혹은 오늘 날짜
 modelVersion = "DenseRegressor_2nd_torch"  # 두번째가 layer1
 # 이모델에서 사용할 vaelstm 모델 이름
 vae_ModelVersion = "vaelstm_3rd_torch"
-nameDataset = "IWALQQ_AE_4th"
+nameDataset = "IWALQQ_AE_4th_NOTSENSOR"
 load_dataType = "angle"
 dataType = "angle"  # moBWHT
 # 데이터 feature 정보, 추후에 자동화가 필요할랑가?

@@ -2,7 +2,7 @@
 
 #$ -l h_rt=12:00:00
 #$ -N MNmo
-#$ -o ../../result_qsub/miniDgRegMo/20220630_Decay_0.0005
+#$ -o ../../../result_qsub/miniDgRegMo/NOTSENSOR
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1

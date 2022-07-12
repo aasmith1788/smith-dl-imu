@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
 #$ -l h_rt=24:00:00 
-#$ -N RM
-#$ -o ../../result_qsub/regmo/try_20220629_dense_woDG_첫번째데이터_1layer_add
+#$ -N woD_M
+#$ -o ../../../result_qsub/regmo/NOTSENSOR
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
