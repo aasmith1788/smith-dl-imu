@@ -8,7 +8,7 @@ import module.moment as m
 
 
 class Peak(m.Moment):
-    order = 30
+    order = 20
 
     def __init__(self, name):
         super().__init__(name)

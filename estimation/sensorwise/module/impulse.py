@@ -17,7 +17,9 @@ class Impulse(m.Moment):
         return results
 
     def calImpulse_X(self):
-        df = pd.read_excel(self.dataDirs[0], sheet_name=["true_X", "pred_X"])
+        df = pd.read_excel(
+            self.dataDirs[0], sheet_name=["true_X", "pred_X"], engine="openpyxl"
+        )
         results = []
         for (_, colData) in df[f"true_X"].iteritems():
             results = self.cal_X(colData, results)
@@ -43,7 +45,9 @@ class Impulse(m.Moment):
         return results
 
     def calImpulse_Y(self):
-        df = pd.read_excel(self.dataDirs[0], sheet_name=["true_Y", "pred_Y"])
+        df = pd.read_excel(
+            self.dataDirs[0], sheet_name=["true_Y", "pred_Y"], engine="openpyxl"
+        )
         results = []
         for (_, colData) in df[f"true_Y"].iteritems():
             results = self.cal_Y(colData, results)
