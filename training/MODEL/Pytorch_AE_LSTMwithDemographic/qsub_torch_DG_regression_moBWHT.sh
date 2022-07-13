@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
-#$ -l h_rt=4:00:00
+#$ -l h_rt=16:00:00
 #$ -N RMDG
-#$ -o ../../result_qsub/dgregmo/20220630_weightDecay_0.0001
+#$ -o ../../result_qsub/dgregmo/minibatch
 #$ -j y    
 #$ -m ea
 #$ -l gpus=1
