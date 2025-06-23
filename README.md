@@ -130,6 +130,8 @@ against the ground truth, making it easy to spot any misalignment.  The new log
 file captures a run where these reshaping steps were applied, serving as proof
 that the corrections functioned in practice.
 
+Commit three focused exclusively on debugging the moment model's metric calculations through extensive experimentation in the validation notebook, which became the central testing ground for ensuring consistency between training-time and post-training RMSE calculations. The researchers needed to verify that when their training loop reported metrics like "X-axis RMSE = 5.2," manually recalculating the same RMSE in the notebook using saved predictions would yield identical results, as any discrepancy would indicate a fundamental error in their metric implementation. The commit shows evidence of intensive detective work through numerous notebook modifications - adding, deleting, and revising cells as they experimented with different approaches to visualize tensor shapes, test various transposition and reshaping strategies, and determine the correct sequence of operations (whether to transpose before scaling or scale before transposing). This iterative trial-and-error process in the notebook allowed them to systematically debug their data processing pipeline and ensure their per-axis RMSE calculations were mathematically sound and reproducible across both the automated training environment and manual verification steps.
+
 ## Reproducing the Notebook Improvements
 
 First, open `StudyRoom/Check_metric.ipynb` in Jupyter and execute it from the
