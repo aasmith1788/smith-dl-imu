@@ -44,6 +44,10 @@ such as the rescaled root‑mean‑square error transformed predictions back to 
 original units using stored scalers.  The scripts ran for up to 1,000 epochs on
 the BU SCC cluster using the Nadam optimizer and logged metrics via TensorBoard.
 
+
+In this fully connected neural network architecture, information flows through each layer where every unit receives all outputs from the previous layer and produces a single output value. Starting with 4,242 IMU features, each of the 6,000 units in the first hidden layer receives all 4,242 inputs, applies its own unique weights and bias, and outputs one value through an activation function, producing 6,000 total outputs. These 6,000 values then feed into the second hidden layer where each of the 4,000 units receives all 6,000 inputs, applies its own learned weights and bias, and produces one output value, resulting in 4,000 total outputs. Finally, each of the 303 output units receives all 4,000 values from the previous layer, applies its own weights and bias, and produces one final prediction corresponding to specific joint angles or moments across the three anatomical axes. This "fully connected" or "dense" design means every unit in each layer connects to every unit in the previous layer with its own learnable weight, allowing the network to discover complex combinations of features that are most predictive for biomechanical estimation while progressively transforming the high-dimensional sensor data into the final 303 biomechanical predictions.
+
+
 ## Reproducing the Original Training Runs
 
 To recreate the first experiments, begin by installing Python 3.8+ and setting up a virtual environment.  The early scripts relied on TensorFlow 2.x, Keras, scikit-learn, and numpy.  After cloning this repository, install these packages using `pip` or recreate the `sccIMU` conda environment referenced in the job scripts.  Running on a GPU is optional but provides substantial speedups.
@@ -127,6 +131,13 @@ axes.  Visualizations embedded in the notebook plot the predicted moment curves
 against the ground truth, making it easy to spot any misalignment.  The new log
 file captures a run where these reshaping steps were applied, serving as proof
 that the corrections functioned in practice.
+
+
+
+Commit three focused exclusively on debugging the moment model's metric calculations through extensive experimentation in the validation notebook, which became the central testing ground for ensuring consistency between training-time and post-training RMSE calculations. The researchers needed to verify that when their training loop reported metrics like "X-axis RMSE = 5.2," manually recalculating the same RMSE in the notebook using saved predictions would yield identical results, as any discrepancy would indicate a fundamental error in their metric implementation. The commit shows evidence of intensive detective work through numerous notebook modifications - adding, deleting, and revising cells as they experimented with different approaches to visualize tensor shapes, test various transposition and reshaping strategies, and determine the correct sequence of operations (whether to transpose before scaling or scale before transposing). This iterative trial-and-error process in the notebook allowed them to systematically debug their data processing pipeline and ensure their per-axis RMSE calculations were mathematically sound and reproducible across both the automated training environment and manual verification steps.
+
+Commit three built directly on commit two's metric validation work by addressing a critical inconsistency problem: the RMSE metrics calculated automatically during neural network training weren't matching the RMSE metrics calculated manually in the verification notebook using the exact same predictions. When the training loop would report something like "X-axis RMSE = 5.2," the manual recalculation in the notebook might yield "X-axis RMSE = 3.8" for identical prediction data, indicating a fundamental bug in their metric implementation. Through extensive debugging and experimentation in the notebook, they discovered that the training loop and manual calculation were processing the tensor data with different axis arrangements - essentially they were comparing apples to oranges because the data was organized differently in each context. The "transpose" solution they developed ensured that both the automated training metrics and the manual notebook calculations used the same data organization and axis ordering, finally achieving the matching results they needed to trust their evaluation metrics and proceed with confidence in their model performance assessments.
+
 
 ## Reproducing the Notebook Improvements
 
@@ -1436,6 +1447,7 @@ To further debug the environment issues, the team created a small diagnostic scr
 ### Using the New Environment
 
 After cloning the repository, create the `imu` environment according to the project’s conda requirements. Run `python envChecker.py` to verify that PyTorch loads and detects the GPU. If the check passes, execute `grid_torch_angleModel.py` to perform a short training run using the AE dataset. Logs should appear under `result_qsub/angle/grid` just as they did for the moment model.
+
 
 
 ## Summary of the One Hundred First Commit
