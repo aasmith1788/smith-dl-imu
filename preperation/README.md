@@ -27,8 +27,12 @@ The pipeline expects raw IMU exports in text or CSV format. Execute the notebook
    - **`4_DataSet_NAC_Mundt.ipynb`** – Reproduces the Mundt et al. scaling method for comparison purposes.
    - **`4_DataSet_IWALQQ_AE.ipynb`** – Writes the same trials into a four-dimensional tensor for autoencoder-based models.
    - **`4_DataSet_IWALQQ_AE_MOSTyle.ipynb`** – Formats the data to mimic the public MOST dataset.
-   - **`4_DataSet_IWALQQ_AE_NOTSENSOR.ipynb`** – Drops selected sensors to evaluate robustness.
+ - **`4_DataSet_IWALQQ_AE_NOTSENSOR.ipynb`** – Drops selected sensors to evaluate robustness.
    Each notebook generates `<fold>_fold_final_train.npz` / `<fold>_fold_final_test.npz` and matching scaler pickles inside `preperation/SAVE_dataSet/<DATASET_NAME>` (e.g. `IWALQQ_1st_correction`).
+
+**Required vs Optional Steps**
+
+Steps 4 and 5 must be executed at least once because the dataset notebooks load the filtered and time‑normalized files they produce. Step 3 (`2_Data_PDFViewNCheck.py`) is strongly recommended to curate `list_dataset_correction.xlsx`, but the pipeline will still run using whatever entries already exist in that spreadsheet. Step 6 (`3_2_Data_Exclusion.ipynb`) simply prunes additional outliers based on separate spreadsheets and can be skipped if you wish to keep all trials from `list_dataset_correction.xlsx`.
 
 ### Choosing a Dataset
 
