@@ -34,3 +34,6 @@ The following notebooks and scripts form the core of the data preparation pipeli
 - Normalises knee moments by body‑weight × height, fits a MinMax scaler on each training split and scales all inputs and targets to the 0–1 range.
 - Exports the fold‑wise NumPy archives and the six CSV files plus three plots used in your presentation.
 
+
+![scaled_moment_plot_labeled](https://github.com/user-attachments/assets/7c0a8add-bba1-4855-8176-5426ef50e763)
+
