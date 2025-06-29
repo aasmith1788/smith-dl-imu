@@ -1,7 +1,3 @@
-# Preparation Notebook Overview
-
-The following notebooks and scripts form the core of the data preparation pipeline. Each bullet summarises the key operations performed at that stage.
-
 ## 0_Data_sorter.ipynb
 - Scans the raw directory and groups every IMU CSV, marker trajectory file, force-plate TXT and PDF metadata sheet that share the same subject and trial ID into one folder.
 - Renames each file to a uniform pattern (`IMU_TARGETLEG.csv`, `FORCE.txt`, `MARKER.trc`, etc.).
@@ -34,6 +30,11 @@ The following notebooks and scripts form the core of the data preparation pipeli
 - Normalises knee moments by body‑weight × height, fits a MinMax scaler on each training split and scales all inputs and targets to the 0–1 range.
 - Exports the fold‑wise NumPy archives and the six CSV files plus three plots used in your presentation.
 
+![imu_acc_plot](https://github.com/user-attachments/assets/0433bc5c-2adb-4fad-a293-de2027930f1e)
+
+![imu_gyro_plot](https://github.com/user-attachments/assets/842ae24d-0929-475c-af39-7ed1a77439cf)
+
+![scaled_angle_plot_labeled](https://github.com/user-attachments/assets/4a53bcb2-ae87-407a-ae76-8a85fdf5fd5f)
 
 ![scaled_moment_plot_labeled](https://github.com/user-attachments/assets/7c0a8add-bba1-4855-8176-5426ef50e763)
 
