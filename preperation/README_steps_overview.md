@@ -19,7 +19,7 @@
 
 ## 3_0_Data_filtertoSave.ipynb
 - Loads each accepted trial's separate IMU, marker and force files, synchronises them on a common time axis and applies a 4th‑order Butterworth low‑pass filter (15 Hz accelerometer, 6 Hz moment).
-- Removes spikes greater than 8 × MAD, reorders IMU channels, detects heel‑strike events and trims all signals to one complete gait cycle.
+- Removes spikes greater than 8 × median absolute deviation, reorders IMU channels, detects heel‑strike events and trims all signals to one complete gait cycle.
 - Combines the aligned signals into unified NumPy arrays: IMU 101 × 42, knee angles 101 × 3, knee moments 101 × 3.
 
 ## 3_1_Data_timenormalized.ipynb
