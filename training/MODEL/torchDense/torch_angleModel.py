@@ -1,3 +1,35 @@
+# Install required packages if not already installed
+import subprocess
+import sys
+
+def install_package(package):
+    """Install package using pip"""
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# List of required packages
+required_packages = [
+    "torch",
+    "torchvision", 
+    "torchaudio",
+    "numpy",
+    "tqdm",
+    "tensorboard"
+]
+
+# Install packages
+print("Installing required packages...")
+for package in required_packages:
+    try:
+        __import__(package)
+        print(f"✓ {package} already installed")
+    except ImportError:
+        print(f"Installing {package}...")
+        install_package(package)
+        print(f"✓ {package} installed successfully")
+
+print("All packages ready!\n")
+
+# Now import everything
 import torch
 from torch import nn
 import torch.nn.functional as F
