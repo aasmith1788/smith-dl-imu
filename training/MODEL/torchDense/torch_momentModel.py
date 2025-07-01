@@ -34,14 +34,19 @@ log_interval = 10  # Interval for logging (currently not used in main loop)
 # Data directory containing the preprocessed datasets
 absDataDir = r"R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero\Included_checked\SAVE_dataSet"
 dataSetDir = join(absDataDir, nameDataset)  # Full path to dataset
-# Model saving directory
-SaveDir = r'R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Learning\trainedModel'
-# TensorBoard logs directory
-logDir = r'R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Learning\training\logs'
+
+# UPDATED: Single output directory for all results
+output_base_dir = r'R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Learning\Training_results\Dense_1st_Torch_moBWHT'
+
+# Model saving directory (updated to use new base directory)
+SaveDir = join(output_base_dir, 'models')
+# TensorBoard logs directory (updated to use new base directory)
+logDir = join(output_base_dir, 'logs')
 ############################
 
 print(f"Current settings - Type:{dataType}, lr:{learningRate}, BS:{batch_size}, LF:{lossFunction},\
      \nmodelV:{modelVersion}, DataSet:{nameDataset}")
+print(f"All outputs will be saved to: {output_base_dir}")
 
 # Generate timestamp for unique identification
 time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")[:-2]
@@ -154,7 +159,14 @@ def ensure_dir(file_path):
         file_path (str): Path to directory
     """
     if not os.path.exists(file_path):
-        os.makedirs(file_path)
+        try:
+            os.makedirs(file_path, exist_ok=True)
+            print(f"Created directory: {file_path}")
+        except Exception as e:
+            print(f"Error creating directory {file_path}: {e}")
+            raise
+    else:
+        print(f"Directory already exists: {file_path}")
 
 def nRMSE_Axis_TLPerbatch(pred, target, axis, load_scaler4Y):
     """
@@ -198,6 +210,11 @@ def nRMSE_Axis_TLPerbatch(pred, target, axis, load_scaler4Y):
         
     return nRMSE_perbatch
 
+# Create the main output directory structure
+ensure_dir(output_base_dir)
+ensure_dir(SaveDir)
+ensure_dir(logDir)
+
 # Main training loop - iterate through each fold of cross-validation
 for numFold in range(totalFold):
     print(f'Current fold: {numFold + 1}/{totalFold}')
@@ -218,9 +235,45 @@ for numFold in range(totalFold):
     train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
+    # Create TensorBoard log directories with shorter paths to avoid Windows path length limits
+    # Use abbreviated names to keep paths shorter
+    short_exp_name = 'dense_torch'
+    short_dataset = 'IWALQQ'
+    
+    train_log_dir = join(logDir, short_exp_name, f'LR{learningRate}_BS{batch_size}_{lossFunction}', 'train', f'fold_{numFold}')
+    test_log_dir = join(logDir, short_exp_name, f'LR{learningRate}_BS{batch_size}_{lossFunction}', 'test', f'fold_{numFold}')
+    
+    print(f"Creating train log directory: {train_log_dir}")
+    print(f"Creating test log directory: {test_log_dir}")
+    print(f"Train path length: {len(train_log_dir)} characters")
+    print(f"Test path length: {len(test_log_dir)} characters")
+    
+    # Ensure directories exist before creating SummaryWriter
+    ensure_dir(train_log_dir)
+    ensure_dir(test_log_dir)
+    
+    # Verify directories were created
+    if not os.path.exists(train_log_dir):
+        raise Exception(f"Failed to create train log directory: {train_log_dir}")
+    if not os.path.exists(test_log_dir):
+        raise Exception(f"Failed to create test log directory: {test_log_dir}")
+    
+    print("Initializing TensorBoard writers...")
+    
     # Initialize TensorBoard writers for logging training metrics
-    writer_train = SummaryWriter(join(logDir, f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/train/{numFold}_fold'))
-    writer_test = SummaryWriter(join(logDir, f'{exp_name}/{modelVersion}/{nameDataset}/{dataType}/LR_{learningRate}_BS_{batch_size}_LF_{lossFunction}/test/{numFold}_fold'))
+    try:
+        writer_train = SummaryWriter(train_log_dir)
+        print("Train writer created successfully")
+    except Exception as e:
+        print(f"Error creating train writer: {e}")
+        raise
+        
+    try:
+        writer_test = SummaryWriter(test_log_dir)
+        print("Test writer created successfully")
+    except Exception as e:
+        print(f"Error creating test writer: {e}")
+        raise
     
     # Add model graph to TensorBoard (for visualization)
     x = torch.rand(1, 4242, device=device)  # Create dummy input
@@ -356,7 +409,7 @@ for numFold in range(totalFold):
     writer_train.close()
     writer_test.close()
     
-    # Save the trained model
+    # Save the trained model (updated path structure)
     dir_save_torch = join(SaveDir, modelVersion, nameDataset)
     ensure_dir(dir_save_torch)  # Create directory if it doesn't exist
     
@@ -364,9 +417,12 @@ for numFold in range(totalFold):
     model_scripted = torch.jit.script(my_model)
     model_scripted.save(join(dir_save_torch, f'{dataType}_{numFold}_fold.pt'))
     
-    print(f"Model saved for fold {numFold}")
+    print(f"Model saved for fold {numFold} to: {join(dir_save_torch, f'{dataType}_{numFold}_fold.pt')}")
 
-print("Training completed for all folds!")
+print(f"Training completed for all folds!")
+print(f"All results saved to: {output_base_dir}")
+print(f"- Models saved to: {SaveDir}")
+print(f"- TensorBoard logs saved to: {logDir}")
 
 # Notes for loading saved models:
 # Always call model.eval() after loading a model for inference!
@@ -374,4 +430,3 @@ print("Training completed for all folds!")
 # model = torch.jit.load('model_scripted.pt')
 # model.eval()
 # See: https://tutorials.pytorch.kr/beginner/saving_loading_models.html#export-load-model-in-torchscript-format
-
