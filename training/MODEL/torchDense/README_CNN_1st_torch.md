@@ -6,6 +6,122 @@ workflow mirrors the dense model (see `Dense_1st_torch`) but replaces the MLP
 with a small 1D CNN.  The same `.npz` datasets and `.pkl` scalers can be
 reused without rerunning the preprocessing notebooks.
 
+## Important Caveat
+
+Reviewing the Git history shows that `torch_angleModel.py` never implemented a
+convolutional model.  Every commit up through `df9474d` defines only the
+`Mlp` class containing three dense layers.  Lines 90‑116 of the current script
+illustrate this:
+
+```python
+class Mlp(nn.Module):
+    def __init__(self):
+        super(Mlp, self).__init__()
+        self.flatten = nn.Flatten()
+        self.layer1 = nn.Linear(4242, 6000)
+        self.layer2 = nn.Linear(6000, 4000)
+        self.layer3 = nn.Linear(4000, 303)
+        self.dropout1 = nn.Dropout(p=0.5)
+    def forward(self, x):
+        x = self.flatten(x)
+        x = F.relu(self.layer1(x))
+        x = self.dropout1(x)
+        x = F.relu(self.layer2(x))
+        x = self.layer3(x)
+        return x
+```
+
+Simply changing `modelVersion` therefore still trains this MLP.  To run a CNN
+you must modify the script to include a convolutional architecture.
+
+## History of CNN Experiments
+
+Scanning every commit from the initial April&nbsp;2022 check‑in (`7095608`) to
+the last refactor in `df9474d` shows only a few short trials with convolutional
+layers.  Commits `106ab29` and `b4eaa03` introduced a file named
+`tmp_torch.py`—a basic MNIST classifier with two `Conv2d` layers used merely to
+verify GPU execution.  These experiments live under `training/StudyRoom` and
+never connected to the IMU training scripts.  The notebook `QC_torch_angleModel`
+added in `c07dd69` still created the dense `Mlp` model.  No commit defines a
+`Conv1d` network for the IMU dataset or references the `CNN_1st_torch` version
+flag.  The repository therefore contains no production CNN implementation nor
+
+## History of LSTM Experiments
+
+Several commits experimented with recurrent autoencoders rather than CNNs. The
+one hundred ninth commit introduced `training/MODEL/Sequitur/LSTM_AE_1stTry.ipynb`
+using the Sequitur library to build a simple `LSTM_AE` on one fold of the data.
+The notebook ran a few forward passes but never reached a functional training
+loop.
+
+The next commit added a TensorFlow example under
+`training/MODEL/Tensorflow_VAE_LSTM`. The accompanying
+`VAE_TimeSeries.ipynb` notebook demonstrates a Keras-based VAE with LSTM layers
+on a traffic-volume dataset to validate the approach before tackling the IMU
+signals.
+
+Commits one hundred eleven through one hundred fourteen then refactored the
+PyTorch utilities into a small package named `CBDtorch` and created
+`training/MODEL/Pytorch_AE_LSTM`. Inside `StudyRoom/AE_LSTM.ipynb` the authors
+explored both unidirectional and bidirectional LSTM autoencoders. Later
+revisions introduced a reusable `train_loop` routine and a companion notebook
+showing how to reload a saved model.
+
+Despite these investigations the main regression script never integrated an
+LSTM. `torch_angleModel.py` still constructs only dense layers, so sequence
+models remain confined to the experimental notebooks.
+
+### Expansion of LSTM Work
+
+Later commits moved beyond prototypes to a full VAE‑LSTM pipeline targeting the
+knee OA dataset. Commit `2b6f5d4` (May 17 2022) imported a TensorFlow example to
+study the architecture. Two days later `45c8935` introduced a PyTorch version
+with notebooks illustrating both AE‑LSTM and VAE‑LSTM. Subsequent commits
+`065e5d5` and `5eedc44` created the `CBDtorch` package with modular
+`vaelstm_*layer.py` definitions so different encoder depths could be swapped in.
+Training jobs under `training/MODEL/Pytorch_AE_LSTMwithDemographic` were
+submitted to the BU SCC cluster via the `qsub_MOSTyle_torch_*` scripts. The
+outputs—per‑epoch spreadsheets and summary PDFs—are stored beneath
+`estimation/sensorwise/.../vaelstm_*`.
+
+Commit `888428e` (June 28 2022) records running the third and fourth datasets
+through this pipeline, and `187deff` (July 6 2022) began a variant using only
+three sensors. These results demonstrate a working VAE‑LSTM model predicting
+knee kinematics and kinetics, albeit outside of `torch_angleModel.py`.
+
+## Adding CNN Support
+
+
+Below is a minimal example of how `torch_angleModel.py` can be extended.  Add a
+`CNN1st` class and instantiate it when `modelVersion` equals
+`"CNN_1st_torch"`:
+
+```python
+class CNN1st(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv1d(42, 64, kernel_size=5)
+        self.dropout = nn.Dropout(0.5)
+        self.conv2 = nn.Conv1d(64, 32, kernel_size=5)
+        self.flat = nn.Flatten()
+        self.fc = nn.Linear(32 * 93, 303)
+    def forward(self, x):
+        x = x.view(x.size(0), 42, 101)
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        x = F.relu(self.conv2(x))
+        x = self.flat(x)
+        return self.fc(x)
+
+if modelVersion == 'CNN_1st_torch':
+    my_model = CNN1st()
+else:
+    my_model = Mlp()
+my_model.to(device)
+```
+
+The rest of the training loop remains unchanged.
+
 ## 1. Environment Setup
 
 1. **Python version**: Python 3.8 or newer.
