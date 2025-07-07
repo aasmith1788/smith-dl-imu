@@ -16,3 +16,19 @@ The evaluation code reports **relative RMSE** (also called nRMSE) for each anato
 nRMSE = 100 * sqrt(mean((pred - target)^2)) / (max(target) - min(target))
 ```
 The `100` factor expresses the error as a percentage.  By normalizing with the range `(max - min)` the statistic indicates how large the error is relative to the subject's own movement amplitude.  This allows direct comparison across joints and participants even when their absolute joint angles or moments differ considerably, making nRMSE a consistent metric for training and reporting.
+
+## Next Steps
+
+While the dense MLPs provide a baseline, the repository is ready for more
+expressive models.  Implementing a small **1D convolutional network** would
+capture short-term temporal patterns that the current fully connected layers may
+miss.  The existing dataset loaders can feed sequences of shape `(N, 4242, 1)`
+into a series of convolutional and pooling layers before the final projection to
+303 outputs.  See the `README_CNN_*` documents under
+`training/MODEL/torchDense/` for preliminary design notes.
+
+Another extension is a **temporal convolutional network (TCN)**.  By stacking
+dilated convolutions with residual connections, a TCN can model long-range
+dependencies while maintaining efficient training.  Adding such a model next to
+the dense and CNN variants would enable direct comparison of how well each
+captures movement dynamics across the five folds.
