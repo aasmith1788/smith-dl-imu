@@ -69,17 +69,17 @@ Like the final hidden layer, these detect full objects:
 The key insight: Instead of learning arbitrary patterns like regular hidden layers, CNN layers learn hierarchical visual patterns that build from simple (edges) to complex (objects).
 
 ## 4 Formal definition of a 2-D convolution  
-Let the \(q\)-th hidden volume be  
-\[
+Let the $q$-th hidden volume be  
+$$
 H^{(q)}\in\mathbb{R}^{L_q\times B_q\times d_q},
-\]  
-and let the \(p\)-th kernel of that layer be  
-\[
+$$  
+and let the $p$-th kernel of that layer be  
+$$
 W^{(p,q)}=\bigl[w_{ijk}^{(p,q)}\bigr]_{1\le i,j\le F_q,\;1\le k\le d_q}.
-\]  
-With stride \(S_q=1\) and zero padding the forward map is  
+$$  
+With stride $S_q=1$ and zero padding the forward map is  
 
-\[
+$$
 h^{(q+1)}_{i,j,p}\;=\;\sum_{r=1}^{F_q}\sum_{s=1}^{F_q}\sum_{k=1}^{d_q}
 w^{(p,q)}_{rsk}\;h^{(q)}_{\,i+r-1,\;j+s-1,\;k},
 \qquad
@@ -88,15 +88,15 @@ w^{(p,q)}_{rsk}\;h^{(q)}_{\,i+r-1,\;j+s-1,\;k},
 &1\le j\le B_q-F_q+1,\\[-2pt]
 &1\le p\le d_{q+1}.
 \end{aligned}
-\]  
+$$  
 
 This sliding-window dot product (just like the dot product in regular neural networks, but applied to small patches) is applied at **every** valid spatial location, so translating the input merely translates the feature map—**equivariance to translation**. Because the same kernel (same set of weights) is reused across all locations, the parameter count is  
 
-\[
+$$
 \#\text{weights}=F_q^{\,2}\,d_q\,d_{q+1}+d_{q+1},
-\]  
+$$  
 
-independent of \(L_q,B_q\).
+independent of $L_q,B_q$.
 
 ### Step-by-step convolution example
 Think of this as applying the same "neuron" (with weights in the kernel) to every 3×3 patch in the input:
@@ -120,55 +120,55 @@ Input (like a 5×5 image):    Kernel (like neuron weights):
 This process creates a 3×3 feature map (output), where each value comes from applying the same kernel to different patches. It's like having 9 neurons that all share the same weights but look at different parts of the input.
 
 ## 5 Padding, stride, and receptive-field dynamics  
-*Zero-padding* adds \(P\) rows/columns of zeros around the input so edge pixels can participate fully in convolution (imagine adding a black border around an image). *Full-padding* adds \(F_q-1\) zeros on every side, **increasing** the spatial footprint instead of shrinking it; full padding is vital in auto-encoders and in gradient back-propagation because it exactly inverts the shrinkage of a valid convolution.
+*Zero-padding* adds $P$ rows/columns of zeros around the input so edge pixels can participate fully in convolution (imagine adding a black border around an image). *Full-padding* adds $F_q-1$ zeros on every side, **increasing** the spatial footprint instead of shrinking it; full padding is vital in auto-encoders and in gradient back-propagation because it exactly inverts the shrinkage of a valid convolution.
 
-*Stride* \(S_q\) controls how many pixels the kernel moves each step. Instead of sliding one pixel at a time, stride=2 means skip every other position. This samples the convolution at positions \(1,\;S_q+1,\;2S_q+1,\dots\) so the next layer's spatial size becomes  
+*Stride* $S_q$ controls how many pixels the kernel moves each step. Instead of sliding one pixel at a time, stride=2 means skip every other position. This samples the convolution at positions $1,\;S_q+1,\;2S_q+1,\dots$ so the next layer's spatial size becomes  
 
-\[
+$$
 L_{q+1}=\left\lfloor\frac{L_q+2P-F_q}{S_q}\right\rfloor+1,\qquad
 B_{q+1}=\left\lfloor\frac{B_q+2P-F_q}{S_q}\right\rfloor+1,
-\]  
+$$  
 
 and each neuron's **receptive field** (the region of the original input that influences one neuron's output) grows rapidly; strides of 1 (occasionally 2) are typical because larger values degrade accuracy.
 
-Stacking \(m\) layers of \(3\times3\) kernels with stride 1 yields an effective field  
+Stacking $m$ layers of $3\times3$ kernels with stride 1 yields an effective field  
 
-\[
+$$
 F_{\text{eff}} = 3 + 2(m-1),
-\]  
+$$  
 
-so three such layers "see" a \(7\times7\) patch of the original image while using dramatically fewer parameters than a single \(7\times7\) kernel.
+so three such layers "see" a $7\times7$ patch of the original image while using dramatically fewer parameters than a single $7\times7$ kernel.
 
 ### Example: Receptive field growth
-Consider a simple CNN with three consecutive \(3\times3\) convolutional layers (stride 1, no padding):
+Consider a simple CNN with three consecutive $3\times3$ convolutional layers (stride 1, no padding):
 
-- **Layer 1**: Each neuron sees a \(3\times3\) patch of the input
-- **Layer 2**: Each neuron aggregates information from a \(3\times3\) patch of Layer 1's output. Since each Layer 1 neuron already sees \(3\times3\), Layer 2 neurons effectively see \(3 + 2(1) = 5\times5\) of the original input
-- **Layer 3**: Following the same logic, each neuron sees \(3 + 2(2) = 7\times7\) of the original input
+- **Layer 1**: Each neuron sees a $3\times3$ patch of the input
+- **Layer 2**: Each neuron aggregates information from a $3\times3$ patch of Layer 1's output. Since each Layer 1 neuron already sees $3\times3$, Layer 2 neurons effectively see $3 + 2(1) = 5\times5$ of the original input
+- **Layer 3**: Following the same logic, each neuron sees $3 + 2(2) = 7\times7$ of the original input
 
 Parameter comparison:
-- Three \(3\times3\) layers: \(3 \times (3^2 \times d \times d) = 27d^2\) parameters (per channel)
-- One \(7\times7\) layer: \(7^2 \times d \times d = 49d^2\) parameters (per channel)
+- Three $3\times3$ layers: $3 \times (3^2 \times d \times d) = 27d^2$ parameters (per channel)
+- One $7\times7$ layer: $7^2 \times d \times d = 49d^2$ parameters (per channel)
 
 The stacked approach uses ~45% fewer parameters while achieving the same receptive field size.
 
 ## 6 Non-linear activation and pooling  
-Each convolution is immediately followed by a **ReLU** \(g(x)=\max(0,x)\) activation function (just like in regular neural networks), whose piecewise-linear derivative avoids vanishing gradients and speeds training; ReLU has almost entirely displaced sigmoid and \(\tanh\) in CNN practice.
+Each convolution is immediately followed by a **ReLU** $g(x)=\max(0,x)$ activation function (just like in regular neural networks), whose piecewise-linear derivative avoids vanishing gradients and speeds training; ReLU has almost entirely displaced sigmoid and $\tanh$ in CNN practice.
 
-After two or three conv-ReLU pairs, **max-pooling** is a downsampling operation that takes the maximum value from each small region (like 2×2 patches). With window \(P_q\) and stride \(S_q\), it replaces each \(P_q\times P_q\) patch by its maximum, reducing spatial resolution and imparting partial translation invariance while preserving depth (number of channels/feature maps). A canonical block  
+After two or three conv-ReLU pairs, **max-pooling** is a downsampling operation that takes the maximum value from each small region (like 2×2 patches). With window $P_q$ and stride $S_q$, it replaces each $P_q\times P_q$ patch by its maximum, reducing spatial resolution and imparting partial translation invariance while preserving depth (number of channels/feature maps). A canonical block  
 
-\[
+$$
 \texttt{C}\,\texttt{R}\,\texttt{C}\,\texttt{R}\,\texttt{P}
-\]
+$$
 
-is repeated several times; VGG repeats this pattern five times with \(3\times3\) filters throughout. Here C=Convolution, R=ReLU activation, P=Pooling.
+is repeated several times; VGG repeats this pattern five times with $3\times3$ filters throughout. Here C=Convolution, R=ReLU activation, P=Pooling.
 
 ### Alternative activation functions
 Beyond ReLU, other activation functions used in CNNs include:
-- **Sigmoid**: \(\sigma(x) = \frac{1}{1+e^{-x}}\) - same as in regular neural networks, but suffers from vanishing gradients
-- **Tanh**: \(\tanh(x) = \frac{e^x-e^{-x}}{e^x+e^{-x}}\) - zero-centered version of sigmoid, but still has vanishing gradients
-- **Leaky ReLU**: \(f(x) = \max(0.01x, x)\) - prevents "dead neurons" that never activate
-- **ELU**: \(f(x) = \begin{cases} x & \text{if } x > 0 \\ \alpha(e^x - 1) & \text{if } x \leq 0 \end{cases}\) - smooth version that helps with self-normalization
+- **Sigmoid**: $\sigma(x) = \frac{1}{1+e^{-x}}$ - same as in regular neural networks, but suffers from vanishing gradients
+- **Tanh**: $\tanh(x) = \frac{e^x-e^{-x}}{e^x+e^{-x}}$ - zero-centered version of sigmoid, but still has vanishing gradients
+- **Leaky ReLU**: $f(x) = \max(0.01x, x)$ - prevents "dead neurons" that never activate
+- **ELU**: $f(x) = \begin{cases} x & \text{if } x > 0 \\ \alpha(e^x - 1) & \text{if } x \leq 0 \end{cases}$ - smooth version that helps with self-normalization
 
 ## 7 Classic CNN architectures
 
@@ -196,7 +196,7 @@ Beyond ReLU, other activation functions used in CNNs include:
 
 ### ResNet-50 (2015)
 - **Innovation**: Skip connections solve vanishing gradient problem
-- **Residual block**: \(H(x) = F(x) + x\) where \(F(x)\) is learned residual
+- **Residual block**: $H(x) = F(x) + x$ where $F(x)$ is learned residual
 - **Enables**: Networks with 50, 101, even 152 layers
 - **Parameters**: ~26M (fewer than VGG despite being deeper!)
 
@@ -294,24 +294,24 @@ def train_cnn(model, train_loader, val_loader, epochs=50):
 ## 9 Training and back-propagation  
 For stride 1, the gradient w.r.t. the previous layer is a convolution with the **spatially flipped** and **depth-transposed** kernel, and the forward/backward paddings satisfy  
 
-\[
+$$
 p_{\text{fwd}}+p_{\text{bwd}} = F_q-1
-\]
+$$
 
-Flattening each \(F_q\times F_q\times d_q\) patch into a vector shows that convolution is exactly the sparse matrix product \(Cf\); back-prop uses \(C^{\!\top}\), which immediately motivates **transposed (or de-)convolution** and the decoders of convolutional auto-encoders.
+Flattening each $F_q\times F_q\times d_q$ patch into a vector shows that convolution is exactly the sparse matrix product $Cf$; back-prop uses $C^{\!\top}$, which immediately motivates **transposed (or de-)convolution** and the decoders of convolutional auto-encoders.
 
 Because each weight is reused at every spatial location, its gradient is the **sum** of derivatives over **all** receptive fields in which it appears, so implementations must accumulate those contributions carefully.
 
 ### Example: Gradient accumulation for shared weights
 This is where CNN backpropagation differs from regular neural networks. In a regular network, each weight connects to one input, so its gradient comes from one source. In CNNs, each kernel weight is **shared** across many spatial locations.
 
-Consider a \(3\times3\) kernel applied to a \(5\times5\) input with stride 1. The kernel weight \(w_{1,1}\) (top-left corner) participates in \(3\times3 = 9\) different convolution operations across the output (because the kernel slides to 9 different positions). During backpropagation, the gradient for \(w_{1,1}\) must be the **sum** of gradients from all 9 locations where it was used:
+Consider a $3\times3$ kernel applied to a $5\times5$ input with stride 1. The kernel weight $w_{1,1}$ (top-left corner) participates in $3\times3 = 9$ different convolution operations across the output (because the kernel slides to 9 different positions). During backpropagation, the gradient for $w_{1,1}$ must be the **sum** of gradients from all 9 locations where it was used:
 
-\[
+$$
 \frac{\partial L}{\partial w_{1,1}} = \sum_{i=1}^{3}\sum_{j=1}^{3} \frac{\partial L}{\partial h_{i,j}} \cdot x_{i,j}
-\]
+$$
 
-where \(h_{i,j}\) are the output activations and \(x_{i,j}\) are the corresponding input values that multiplied \(w_{1,1}\).
+where $h_{i,j}$ are the output activations and $x_{i,j}$ are the corresponding input values that multiplied $w_{1,1}$.
 
 This weight sharing is why CNNs can learn translation-invariant features: the same edge detector (kernel) learns to detect edges everywhere in the image, not just in one specific location.
 
@@ -328,7 +328,7 @@ This weight sharing is why CNNs can learn translation-invariant features: the sa
 These help prevent overfitting (when the network memorizes training data instead of learning general patterns):
 - **Batch normalization**: Normalizes inputs to each layer, making training more stable and faster
 - **Dropout**: Randomly sets some neurons to zero during training to prevent over-reliance on specific features
-- **L2 regularization**: Adds a penalty \(\lambda\sum w_i^2\) to the loss function to keep weights small
+- **L2 regularization**: Adds a penalty $\lambda\sum w_i^2$ to the loss function to keep weights small
 - **Data augmentation**: Creates new training examples by rotating, flipping, or slightly modifying existing images
 
 ### Optimization strategies
@@ -396,9 +396,9 @@ optimizer = torch.optim.Adam(model.fc.parameters(), lr=0.001)
 - **Sufficient data**: Training from scratch might be better
 
 ## 13 Design heuristics and capacity control  
-Typical choices are square inputs (\(L_q=B_q\)), powers-of-two channel counts, and small filters (\(F_q\in\{3,5\}\)). Small filters permit greater depth for a fixed parameter budget; VGG's decision to use \(3\times3\) throughout achieved state-of-the-art ImageNet accuracy with only 15 weight layers.
+Typical choices are square inputs ($L_q=B_q$), powers-of-two channel counts, and small filters ($F_q\in\{3,5\}$). Small filters permit greater depth for a fixed parameter budget; VGG's decision to use $3\times3$ throughout achieved state-of-the-art ImageNet accuracy with only 15 weight layers.
 
-Increasing the number of filters in layer \(q\) directly increases the depth \(d_{q+1}\) of its output, expanding model capacity; late layers therefore tend to be shallow in space but very deep in *channels* (hundreds) to capture diverse high-level concepts.
+Increasing the number of filters in layer $q$ directly increases the depth $d_{q+1}$ of its output, expanding model capacity; late layers therefore tend to be shallow in space but very deep in *channels* (hundreds) to capture diverse high-level concepts.
 
 Residual and densely connected blocks further ease optimization in models exceeding 100 layers, while *strided convolutions* increasingly replace pooling to keep everything differentiable and to grow receptive fields faster.
 
@@ -430,9 +430,9 @@ Skip connections, batch normalization, data augmentation, and adaptive optimizer
 ## 15 Sequences as one-dimensional grids  
 Text, time-series, and other ordered data can be regarded as *1-D grids* where the "spatial" axis becomes time and the **depth** becomes the feature dimension. For example, a word embedding turns each word into a vector of numbers, so a sentence becomes a matrix where each row is a word's vector.
 
-**TextCNN** treats a sentence of length \(T\) as a matrix in \(\mathbb{R}^{T\times d}\) (T words, each with d-dimensional embeddings) and slides kernels of width \(w\) across all contiguous \(w\)-grams (sequences of w words).
+**TextCNN** treats a sentence of length $T$ as a matrix in $\mathbb{R}^{T\times d}$ (T words, each with d-dimensional embeddings) and slides kernels of width $w$ across all contiguous $w$-grams (sequences of w words).
 
-A kernel therefore acts like a detector for a particular \(w\)-word phrase or pattern; kernels of multiple widths (like 3, 4, 5 words) capture short phrases, clauses, or longer dependencies. The convolution operation at every temporal location shares weights across time, so the same phrase detector fires wherever that phrase appears—an exact 1-D analogue of how image kernels detect the same visual pattern everywhere in an image.
+A kernel therefore acts like a detector for a particular $w$-word phrase or pattern; kernels of multiple widths (like 3, 4, 5 words) capture short phrases, clauses, or longer dependencies. The convolution operation at every temporal location shares weights across time, so the same phrase detector fires wherever that phrase appears—an exact 1-D analogue of how image kernels detect the same visual pattern everywhere in an image.
 
 ### Example: Sentiment analysis with TextCNN
 ```python
@@ -463,13 +463,13 @@ class TextCNN(nn.Module):
 ```
 
 ## 16 Mathematics inherited unchanged  
-Collapsing the breadth dimension reduces the tensor indices from \((i,j,k)\) to \((t,k)\), but **all formulas from earlier sections still hold**. A 1-D layer with kernel width \(F_q\) and depths \(d_q,d_{q+1}\) has  
+Collapsing the breadth dimension reduces the tensor indices from $(i,j,k)$ to $(t,k)$, but **all formulas from earlier sections still hold**. A 1-D layer with kernel width $F_q$ and depths $d_q,d_{q+1}$ has  
 
-\[
+$$
 F_q\,d_q\,d_{q+1}+d_{q+1}
-\]
+$$
 
-trainable parameters; padding, stride, and global max-pooling regulate temporal footprint exactly as in 2-D. Back-propagation again uses an inverted kernel and, for stride 1, obeys \(p_{\text{fwd}}+p_{\text{bwd}}=F_q-1\).
+trainable parameters; padding, stride, and global max-pooling regulate temporal footprint exactly as in 2-D. Back-propagation again uses an inverted kernel and, for stride 1, obeys $p_{\text{fwd}}+p_{\text{bwd}}=F_q-1$.
 
 ## 17 Applications of 1-D CNNs
 
@@ -507,13 +507,13 @@ While standard 1-D CNNs (like the ones we just discussed) excel at detecting loc
 
 ## 19 Dilated convolutions: Exponential receptive field growth
 
-A **dilated convolution** (also called **atrous convolution**) is like a regular convolution, but with gaps between the kernel elements. Instead of looking at consecutive time steps, it skips some steps, controlled by the dilation rate \(d\):
+A **dilated convolution** (also called **atrous convolution**) is like a regular convolution, but with gaps between the kernel elements. Instead of looking at consecutive time steps, it skips some steps, controlled by the dilation rate $d$:
 
-\[
+$$
 y_i = \sum_{k=0}^{K-1} w_k \cdot x_{i-k \cdot d}
-\]
+$$
 
-where \(K\) is the kernel size, \(d\) is the dilation rate, and \(w_k\) are the kernel weights (just like in regular convolution).
+where $K$ is the kernel size, $d$ is the dilation rate, and $w_k$ are the kernel weights (just like in regular convolution).
 
 Think of it as "stretching" the kernel: instead of looking at 3 consecutive time steps, a dilated kernel with rate 2 looks at every other time step, effectively seeing 5 time steps of history but with the same number of parameters.
 
@@ -536,24 +536,24 @@ Stacking dilated convolutions with exponentially increasing dilation rates creat
 - **Layer 3**: dilation=4, receptive field = 15
 - **Layer 4**: dilation=8, receptive field = 31
 
-General formula for \(L\) layers with kernel size \(K\) and dilation rates \(d_1, d_2, ..., d_L\):
-\[
+General formula for $L$ layers with kernel size $K$ and dilation rates $d_1, d_2, ..., d_L$:
+$$
 \text{Receptive field} = 1 + \sum_{i=1}^{L} (K-1) \cdot d_i
-\]
+$$
 
-For exponential dilation (\(d_i = 2^{i-1}\)) with \(K=3\):
-\[
+For exponential dilation ($d_i = 2^{i-1}$) with $K=3$:
+$$
 \text{Receptive field} = 1 + 2 \sum_{i=0}^{L-1} 2^i = 1 + 2(2^L - 1) = 2^{L+1} - 1
-\]
+$$
 
 ## 20 Causal convolutions: Respecting temporal order
 
-**Causal convolutions** ensure that the output at time \(t\) depends only on inputs at times \(t\) and earlier, never on future inputs. This is crucial for real-time applications where you can't "look into the future."
+**Causal convolutions** ensure that the output at time $t$ depends only on inputs at times $t$ and earlier, never on future inputs. This is crucial for real-time applications where you can't "look into the future."
 
 In regular convolution, a 3-element kernel centered at time t would use inputs from t-1, t, and t+1. In causal convolution, the kernel is shifted so it only uses inputs from t-2, t-1, and t.
 
 ### Implementation through padding
-For a kernel of size \(K\) and dilation \(d\), causal convolution requires **left-padding** (adding zeros to the left) of size \((K-1) \cdot d\). This ensures the convolution only "looks backward" in time:
+For a kernel of size $K$ and dilation $d$, causal convolution requires **left-padding** (adding zeros to the left) of size $(K-1) \cdot d$. This ensures the convolution only "looks backward" in time:
 
 ```python
 def causal_conv1d(x, weight, dilation=1):
@@ -790,7 +790,7 @@ class MultiScaleTCN(nn.Module):
 
 # Concluding synthesis
 
-Convolutional networks form a single, mathematically coherent family whose core operation is a sparse, shared-parameter dot product that is equivariant to translation. The algebra of that operation—matrix \(C\) versus its transpose \(C^{\!\top}\)—governs feature extraction, gradient flow, transposed convolution, and even the decoders of auto-encoders. Whether the grid is two-dimensional (images), one-dimensional (sentences, biosignals), or three-dimensional (video), the same design axioms apply:
+Convolutional networks form a single, mathematically coherent family whose core operation is a sparse, shared-parameter dot product that is equivariant to translation. The algebra of that operation—matrix $C$ versus its transpose $C^{\!\top}$—governs feature extraction, gradient flow, transposed convolution, and even the decoders of auto-encoders. Whether the grid is two-dimensional (images), one-dimensional (sentences, biosignals), or three-dimensional (video), the same design axioms apply:
 
 * **Locality** controls parameters and embeds domain knowledge  
 * **Weight sharing** imposes translational consistency  
