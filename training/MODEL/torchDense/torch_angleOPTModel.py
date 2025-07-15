@@ -343,13 +343,12 @@ for numFold in range(totalFold):
     train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
-    # Create TensorBoard log directories with shorter paths to avoid Windows path length limits
-    # Use abbreviated names to keep paths shorter
-    short_exp_name = 'dense_torch_angle_optimized'
-    short_dataset = 'IWALQQ'
+    # Create TensorBoard log directories with ULTRA SHORT internal paths to avoid Windows path length limits
+    # Keep base directory but make internal structure as short as possible
+    short_exp_name = 'opt'  # Instead of 'dense_torch_angle_optimized'
     
-    train_log_dir = join(logDir, short_exp_name, f'LR{learningRate}_BS{batch_size}_{lossFunction}', 'train', f'fold_{numFold}')
-    test_log_dir = join(logDir, short_exp_name, f'LR{learningRate}_BS{batch_size}_{lossFunction}', 'test', f'fold_{numFold}')
+    train_log_dir = join(logDir, short_exp_name, f'LR{learningRate}', 'tr', f'{numFold}')
+    test_log_dir = join(logDir, short_exp_name, f'LR{learningRate}', 'te', f'{numFold}')
     
     print(f"Creating train log directory: {train_log_dir}")
     print(f"Creating test log directory: {test_log_dir}")
