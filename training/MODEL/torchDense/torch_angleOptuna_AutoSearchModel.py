@@ -261,6 +261,32 @@ def nRMSE_axis_batch(pred, target, axis, scaler):
     
     return batch_nrmse
 
+def evaluate(model, data_loader, criterion, scaler):
+    """Evaluate model and return loss and per-axis nRMSE"""
+    model.eval()
+    total_loss = 0
+    samples = 0
+    x_nrmse = 0
+    y_nrmse = 0
+    z_nrmse = 0
+    with torch.no_grad():
+        for data, target in data_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            loss = criterion(output, target)
+            total_loss += loss.item() * data.size(0)
+            samples += data.size(0)
+            x_nrmse += nRMSE_axis_batch(output, target, 'x', scaler)
+            y_nrmse += nRMSE_axis_batch(output, target, 'y', scaler)
+            z_nrmse += nRMSE_axis_batch(output, target, 'z', scaler)
+
+    total_loss /= samples
+    x_nrmse /= samples
+    y_nrmse /= samples
+    z_nrmse /= samples
+
+    return total_loss, x_nrmse, y_nrmse, z_nrmse
+
 def suggest_architecture(trial):
     """Suggest architecture hyperparameters"""
     # Number of layers
@@ -318,8 +344,8 @@ def suggest_training_params(trial):
         'max_grad_norm': trial.suggest_float('max_grad_norm', 0.5, 5.0)
     }
 
-def train_and_evaluate(model, train_loader, val_loader, criterion, optimizer, scheduler, 
-                      early_stopping, scaler, max_epochs, trial=None, fold=None, 
+def train_and_evaluate(model, train_loader, val_loader, criterion, optimizer, scheduler,
+                      early_stopping, scaler, max_epochs, trial=None, fold=None,
                       log_dir=None, is_final=False):
     """Train and evaluate model with comprehensive logging"""
     
@@ -477,8 +503,8 @@ def train_and_evaluate(model, train_loader, val_loader, criterion, optimizer, sc
         train_writer.close()
     if val_writer:
         val_writer.close()
-    
-    return best_val_loss
+
+    return best_val_loss, best_model_state
 
 def objective(trial):
     """Optuna objective function"""
@@ -500,10 +526,17 @@ def objective(trial):
         # Create model
         model = ConfigurableModel(arch_config).to(device)
         
-        # Create datasets
-        train_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
-        val_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'test', fold)
-        
+        # Load full training dataset and split into train/validation
+        full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
+        val_ratio = 0.2
+        train_size = int(len(full_dataset) * (1 - val_ratio))
+        val_size = len(full_dataset) - train_size
+        train_dataset, val_dataset = torch.utils.data.random_split(
+            full_dataset,
+            [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)
+        )
+
         train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False)
         
@@ -534,8 +567,8 @@ def objective(trial):
         log_dir = join(LOGS_DIR, 'trials', f'trial_{trial.number}', f'fold_{fold}')
         ensure_dir(log_dir)
         
-        # Train and evaluate
-        best_val_loss = train_and_evaluate(
+        # Train and evaluate on training/validation splits
+        best_val_loss, _ = train_and_evaluate(
             model, train_loader, val_loader, criterion, optimizer, scheduler,
             early_stopping, scaler, MAX_EPOCHS_TRIAL, trial, fold, log_dir
         )
@@ -607,12 +640,22 @@ def main():
         # Create model
         model = ConfigurableModel(arch_config).to(device)
         
-        # Create datasets
-        train_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
-        val_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'test', fold)
-        
+        # Prepare training and validation splits
+        full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
+        val_ratio = 0.2
+        train_size = int(len(full_dataset) * (1 - val_ratio))
+        val_size = len(full_dataset) - train_size
+        train_dataset, val_dataset = torch.utils.data.random_split(
+            full_dataset,
+            [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)
+        )
+
+        test_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'test', fold)
+
         train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False)
         
         # Create optimizer and loss
         criterion = create_loss_function(train_config['loss_function'])
@@ -641,11 +684,53 @@ def main():
         log_dir = join(LOGS_DIR, 'final_models', f'fold_{fold}')
         ensure_dir(log_dir)
         
-        # Train final model
-        best_val_loss = train_and_evaluate(
+        # Train final model using validation set for early stopping
+        best_val_loss, _ = train_and_evaluate(
             model, train_loader, val_loader, criterion, optimizer, scheduler,
             early_stopping, scaler, MAX_EPOCHS_FINAL, None, fold, log_dir, is_final=True
         )
+
+        # Evaluate best model on train and test sets
+        train_loss, train_x_nrmse, train_y_nrmse, train_z_nrmse = evaluate(model, train_loader, criterion, scaler)
+        test_loss, test_x_nrmse, test_y_nrmse, test_z_nrmse = evaluate(model, test_loader, criterion, scaler)
+
+        # Log final metrics
+        writer_train = SummaryWriter(join(log_dir, 'train'))
+        writer_test = SummaryWriter(join(log_dir, 'test'))
+        writer_train.add_hparams(
+            {
+                'sess': 'train',
+                'Type': DATA_TYPE,
+                'lr': train_config['learning_rate'],
+                'bsize': train_config['batch_size'],
+                'DS': DATASET_NAME,
+                'lossFunc': train_config['loss_function'],
+            },
+            {
+                'loss': train_loss,
+                'X_nRMSE': train_x_nrmse,
+                'Y_nRMSE': train_y_nrmse,
+                'Z_nRMSE': train_z_nrmse,
+            },
+        )
+        writer_test.add_hparams(
+            {
+                'sess': 'test',
+                'Type': DATA_TYPE,
+                'lr': train_config['learning_rate'],
+                'bsize': train_config['batch_size'],
+                'DS': DATASET_NAME,
+                'lossFunc': train_config['loss_function'],
+            },
+            {
+                'loss': test_loss,
+                'X_nRMSE': test_x_nrmse,
+                'Y_nRMSE': test_y_nrmse,
+                'Z_nRMSE': test_z_nrmse,
+            },
+        )
+        writer_train.close()
+        writer_test.close()
         
         # Save model
         model_dir = join(MODELS_DIR, 'final_models')
@@ -653,9 +738,10 @@ def main():
         
         model_path = join(model_dir, f'{DATA_TYPE}_fold_{fold}_optuna_best.pt')
         torch.jit.script(model).save(model_path)
-        
+
         print(f'  Final model saved: {model_path}')
         print(f'  Best validation loss: {best_val_loss:.4f}')
+        print(f'  Test loss: {test_loss:.4f} (X:{test_x_nrmse:.4f}, Y:{test_y_nrmse:.4f}, Z:{test_z_nrmse:.4f})')
     
     print("\n" + "=" * 50)
     print("TRAINING COMPLETED")
