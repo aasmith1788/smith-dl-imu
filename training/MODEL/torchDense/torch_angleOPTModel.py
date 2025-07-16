@@ -61,7 +61,7 @@ totalFold = 5     # Number of folds for cross-validation
 epochs = 1000     # Number of training epochs per fold
 
 # Early stopping parameters
-early_stopping_patience = 20  # Stop training if validation loss doesn't improve for this many epochs
+early_stopping_patience = 110  # Stop training if validation loss doesn't improve for this many epochs
 early_stopping_min_delta = 0.001  # Minimum change to qualify as improvement
 
 # Learning rate scheduler parameters
