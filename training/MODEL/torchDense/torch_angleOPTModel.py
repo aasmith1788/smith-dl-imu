@@ -336,11 +336,22 @@ for numFold in range(totalFold):
     early_stopping = EarlyStopping(patience=early_stopping_patience, min_delta=early_stopping_min_delta)
 
     # Create dataset instances for training and testing
-    angle_train = Dataset(dataSetDir, dataType, 'train', numFold)
+    angle_train_full = Dataset(dataSetDir, dataType, 'train', numFold)
     angle_test = Dataset(dataSetDir, dataType, 'test', numFold)
-    
+
+    # Split training data into train and validation sets
+    val_ratio = 0.2
+    train_size = int(len(angle_train_full) * (1 - val_ratio))
+    val_size = len(angle_train_full) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(
+        angle_train_full,
+        [train_size, val_size],
+        generator=torch.Generator().manual_seed(42)
+    )
+
     # Create data loaders for batch processing
-    train_loader = DataLoader(angle_train, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader( train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(angle_test, batch_size=batch_size, shuffle=True)
 
     # Create TensorBoard log directories with ULTRA SHORT internal paths to avoid Windows path length limits
@@ -348,20 +359,26 @@ for numFold in range(totalFold):
     short_exp_name = 'opt'  # Instead of 'dense_torch_angle_optimized'
     
     train_log_dir = join(logDir, short_exp_name, f'LR{learningRate}', 'tr', f'{numFold}')
+    val_log_dir = join(logDir, short_exp_name, f'LR{learningRate}', 'va', f'{numFold}')
     test_log_dir = join(logDir, short_exp_name, f'LR{learningRate}', 'te', f'{numFold}')
-    
+
     print(f"Creating train log directory: {train_log_dir}")
+    print(f"Creating val log directory: {val_log_dir}")
     print(f"Creating test log directory: {test_log_dir}")
     print(f"Train path length: {len(train_log_dir)} characters")
+    print(f"Val path length: {len(val_log_dir)} characters")
     print(f"Test path length: {len(test_log_dir)} characters")
-    
+
     # Ensure directories exist before creating SummaryWriter
     ensure_dir(train_log_dir)
+    ensure_dir(val_log_dir)
     ensure_dir(test_log_dir)
-    
+
     # Verify directories were created
     if not os.path.exists(train_log_dir):
         raise Exception(f"Failed to create train log directory: {train_log_dir}")
+    if not os.path.exists(val_log_dir):
+        raise Exception(f"Failed to create val log directory: {val_log_dir}")
     if not os.path.exists(test_log_dir):
         raise Exception(f"Failed to create test log directory: {test_log_dir}")
     
@@ -374,7 +391,14 @@ for numFold in range(totalFold):
     except Exception as e:
         print(f"Error creating train writer: {e}")
         raise
-        
+
+    try:
+        writer_val = SummaryWriter(val_log_dir)
+        print("Val writer created successfully")
+    except Exception as e:
+        print(f"Error creating val writer: {e}")
+        raise
+
     try:
         writer_test = SummaryWriter(test_log_dir)
         print("Test writer created successfully")
@@ -385,6 +409,7 @@ for numFold in range(totalFold):
     # Add model graph to TensorBoard (for visualization)
     x = torch.rand(1, 4242, device=device)  # Create dummy input
     writer_train.add_graph(my_model, x)
+    writer_val.add_graph(my_model, x)
     writer_test.add_graph(my_model, x)
 
     # Load the scaler used for denormalization in metric calculation
@@ -449,19 +474,19 @@ for numFold in range(totalFold):
         writer_train.add_scalar(f'{dataType}_Z_nRMSE', train_z_nRMSE, epoch)
         writer_train.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], epoch)
 
-        # Evaluation phase
-        test_loss = 0
-        test_x_nRMSE = 0
-        test_y_nRMSE = 0
-        test_z_nRMSE = 0
+        # Evaluation phase (validation)
+        val_loss = 0
+        val_x_nRMSE = 0
+        val_y_nRMSE = 0
+        val_z_nRMSE = 0
         
         # Set model to evaluation mode (disables dropout, batch norm eval mode)
         my_model.eval()
         
         # Disable gradient computation for evaluation (saves memory and speeds up)
         with torch.no_grad():
-            # Iterate through test batches
-            for data, target in test_loader:
+            # Iterate through validation batches
+            for data, target in val_loader:
                 # Move data to device
                 data, target = data.to(device), target.to(device)
                 
@@ -471,34 +496,34 @@ for numFold in range(totalFold):
                 # Calculate loss
                 loss = criterion(output, target)
                 
-                # Accumulate test metrics
-                test_loss += loss.item() * data.size(0)
-                test_x_nRMSE += nRMSE_Axis_TLPerbatch(output, target, 'x', load_scaler4Y).item()
-                test_y_nRMSE += nRMSE_Axis_TLPerbatch(output, target, 'y', load_scaler4Y).item()
-                test_z_nRMSE += nRMSE_Axis_TLPerbatch(output, target, 'z', load_scaler4Y).item()
+                # Accumulate validation metrics
+                val_loss += loss.item() * data.size(0)
+                val_x_nRMSE += nRMSE_Axis_TLPerbatch(output, target, 'x', load_scaler4Y).item()
+                val_y_nRMSE += nRMSE_Axis_TLPerbatch(output, target, 'y', load_scaler4Y).item()
+                val_z_nRMSE += nRMSE_Axis_TLPerbatch(output, target, 'z', load_scaler4Y).item()
 
-            # Calculate average test metrics
-            test_loss /= len(test_loader.sampler)
-            test_x_nRMSE /= len(test_loader.sampler)
-            test_y_nRMSE /= len(test_loader.sampler)
-            test_z_nRMSE /= len(test_loader.sampler)
+            # Calculate average validation metrics
+            val_loss /= len(val_loader.sampler)
+            val_x_nRMSE /= len(val_loader.sampler)
+            val_y_nRMSE /= len(val_loader.sampler)
+            val_z_nRMSE /= len(val_loader.sampler)
 
-            # Log test metrics to TensorBoard
-            writer_test.add_scalar('loss(MAE)', test_loss, epoch)
-            writer_test.add_scalar(f'{dataType}_X_nRMSE', test_x_nRMSE, epoch)
-            writer_test.add_scalar(f'{dataType}_Y_nRMSE', test_y_nRMSE, epoch)
-            writer_test.add_scalar(f'{dataType}_Z_nRMSE', test_z_nRMSE, epoch)
+            # Log validation metrics to TensorBoard
+            writer_val.add_scalar('loss(MAE)', val_loss, epoch)
+            writer_val.add_scalar(f'{dataType}_X_nRMSE', val_x_nRMSE, epoch)
+            writer_val.add_scalar(f'{dataType}_Y_nRMSE', val_y_nRMSE, epoch)
+            writer_val.add_scalar(f'{dataType}_Z_nRMSE', val_z_nRMSE, epoch)
 
         # Learning rate scheduler step (monitors validation loss)
-        scheduler.step(test_loss)
+        scheduler.step(val_loss)
         
         # Save best model based on validation loss
-        if test_loss < best_val_loss:
-            best_val_loss = test_loss
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
             best_model_state = my_model.state_dict().copy()
-        
+
         # Check early stopping
-        if early_stopping(test_loss):
+        if early_stopping(val_loss):
             print(f"Early stopping triggered at epoch {epoch+1}")
             print(f"Best validation loss: {best_val_loss:.4f}")
             break
@@ -506,7 +531,7 @@ for numFold in range(totalFold):
         # Print epoch results
         print(f'\nEpoch {epoch+1}/{epochs}:')
         print(f'Train set: Average loss: {train_loss:.4f}, X_nRMSE: {train_x_nRMSE:.4f}, Y_nRMSE: {train_y_nRMSE:.4f}, Z_nRMSE: {train_z_nRMSE:.4f}')
-        print(f'Test set: Average loss: {test_loss:.4f}, X_nRMSE: {test_x_nRMSE:.4f}, Y_nRMSE: {test_y_nRMSE:.4f}, Z_nRMSE: {test_z_nRMSE:.4f}')
+        print(f'Val set: Average loss: {val_loss:.4f}, X_nRMSE: {val_x_nRMSE:.4f}, Y_nRMSE: {val_y_nRMSE:.4f}, Z_nRMSE: {val_z_nRMSE:.4f}')
         print(f'Learning rate: {optimizer.param_groups[0]["lr"]:.2e}')
         print(f'Early stopping counter: {early_stopping.counter}/{early_stopping.patience}')
     
@@ -582,6 +607,7 @@ for numFold in range(totalFold):
     
     # Close TensorBoard writers
     writer_train.close()
+    writer_val.close()
     writer_test.close()
     
     # Save the trained model (updated path structure)
