@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 """
-Optuna‑driven Neural Architecture Search for IMU Angle Prediction
-=================================================================
- ‑ Memory‑safe (12 M‑param cap)
- ‑ Correct nRMSE denormalisation (x * scale + min)
- ‑ Patience fixed to 10 epochs to curb over‑fitting
+Automated Neural Architecture Search with Optuna for IMU Angle Prediction
+
+This script uses Optuna to automatically search for optimal neural network architectures
+and hyperparameters. It includes comprehensive TensorBoard logging to detect overfitting
+and monitor training dynamics.
+
+Features:
+- Automated architecture search (layer sizes, activation functions, etc.)
+- Hyperparameter optimization (learning rate, batch size, optimizer, etc.)
+- Comprehensive TensorBoard logging for overfitting detection
+- Cross-validation with early stopping and pruning
+- Model saving and evaluation
+- MEMORY-SAFE: ~12M parameter limit to prevent CUDA OOM errors
 """
 
-import os, sys, datetime, json, gc
+import subprocess
+import sys
+import os
+import datetime
+import json
 from os.path import join
 from pickle import load
 import numpy as np
@@ -18,330 +30,801 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import optuna
+import gc
 
-# -------------------------------------------------------------------
-# (optional) install dependencies the *first* time you run the script
-# -------------------------------------------------------------------
-if __name__ == "__main__" and "--install" in sys.argv:
-    import subprocess
-    pkgs = ["torch", "torchvision", "torchaudio", "numpy",
-            "tensorboard", "tqdm", "optuna", "optuna-dashboard"]
-    for p in pkgs:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", p])
+# Set PyTorch memory allocation strategy
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
-# ------------------------------ CONFIG -----------------------------
-DATASET_NAME = "IWALQQ_1st_correction"
-DATA_TYPE    = "angle"
+# Install required packages
+def install_package(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+required_packages = [
+    "torch", "torchvision", "torchaudio", "numpy", "tqdm", 
+    "tensorboard", "optuna", "optuna-dashboard"
+]
+
+def install_requirements():
+    """Install required packages if they're missing."""
+    print("Installing required packages...")
+    for package in required_packages:
+        try:
+            __import__(package.replace("-", "_"))
+            print(f"✓ {package} already installed")
+        except ImportError:
+            print(f"Installing {package}...")
+            install_package(package)
+
+    print("All packages ready!\n")
+
+# Configuration
+DATASET_NAME = 'IWALQQ_1st_correction'
+DATA_TYPE = 'angle'
+N_TRIALS = 100
+N_FOLDS = 5
+MAX_EPOCHS_TRIAL = 100  # Epochs per trial (shorter for faster search)
+MAX_EPOCHS_FINAL = 500  # Epochs for final model training
+PRUNING_INTERVAL = 10
+
+# MEMORY MANAGEMENT SETTINGS
+# Tight limit slightly above baseline to avoid memory-hungry models
+MAX_PARAMETERS = 12_000_000
+
+
+# Paths
 BASE_DATA_DIR = r"R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Learning\Data\allnew_20220325_raw_byDeepak_csv\INC_ByStep\INC_ByZero\Included_checked\SAVE_dataSet"
-OUTPUT_DIR   = r"R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Learning\Training_results\Optuna_AutoSearch"
-
-N_TRIALS          = 100
-N_FOLDS           = 5
-MAX_EPOCHS_TRIAL  = 100
-MAX_EPOCHS_FINAL  = 500
-PRUNING_INTERVAL  = 10
-
-MAX_PARAMETERS    = 12_000_000  # 12 M‑param safety cap
-EARLY_STOP_PATIENCE =  10     # fixed patience for trials & finals
-
-# ----------------------------- PATHS -------------------------------
 DATASET_DIR = join(BASE_DATA_DIR, DATASET_NAME)
-MODELS_DIR  = join(OUTPUT_DIR, "models")
-LOGS_DIR    = join(OUTPUT_DIR, "logs")
-OPTUNA_DIR  = join(OUTPUT_DIR, "optuna_studies")
-for d in (OUTPUT_DIR, MODELS_DIR, LOGS_DIR, OPTUNA_DIR):
-    os.makedirs(d, exist_ok=True)
+OUTPUT_DIR = r'R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Learning\Training_results\Optuna_AutoSearch'
+MODELS_DIR = join(OUTPUT_DIR, 'models')
+LOGS_DIR = join(OUTPUT_DIR, 'logs')
+OPTUNA_DIR = join(OUTPUT_DIR, 'optuna_studies')
 
-timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-
-# --------------------------- UTILITIES -----------------------------
+# Device setup
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-torch.backends.cudnn.benchmark = True
+print(f"Using device: {device}")
 
-def clear_gpu():
+# Memory management functions
+def clear_gpu_memory():
+    """Clear GPU memory cache"""
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    gc.collect()
+        gc.collect()
 
-def total_params(sizes, in_dim=4242, out_dim=303):
-    total, prev = 0, in_dim
-    for s in sizes:
-        total += prev * s + s
-        prev = s
-    return total + prev * out_dim + out_dim
+def calculate_total_parameters(layer_sizes, input_dim=4242, output_dim=303):
+    """Calculate total parameters for given architecture"""
+    total = 0
+    prev_dim = input_dim
+    
+    # Hidden layers
+    for size in layer_sizes:
+        total += prev_dim * size + size  # weights + bias
+        prev_dim = size
+    
+    # Output layer
+    total += prev_dim * output_dim + output_dim
+    
+    return total
 
-# ------------------------- EARLY‑STOPPING --------------------------
+# Generate timestamp
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+def ensure_dir(path):
+    """Create directory if it doesn't exist"""
+    os.makedirs(path, exist_ok=True)
+
+# Create output directories
+ensure_dir(OUTPUT_DIR)
+ensure_dir(MODELS_DIR)
+ensure_dir(LOGS_DIR)
+ensure_dir(OPTUNA_DIR)
+
 class EarlyStopping:
-    def __init__(self, patience=EARLY_STOP_PATIENCE, min_delta=1e-3):
-        self.patience   = patience
-        self.min_delta  = min_delta
-        self.counter    = 0
-        self.best_loss  = float("inf")
+    """Early stopping utility"""
+    def __init__(self, patience=20, min_delta=0.001):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = float('inf')
         self.early_stop = False
-        self.max_grad_norm = None  # set externally if needed
-
+    
     def __call__(self, val_loss):
-        improved = val_loss < self.best_loss - self.min_delta
-        self.best_loss = min(val_loss, self.best_loss)
-        self.counter = 0 if improved else self.counter + 1
-        self.early_stop = self.counter >= self.patience
+        if val_loss < self.best_loss - self.min_delta:
+            self.best_loss = val_loss
+            self.counter = 0
+        else:
+            self.counter += 1
+        
+        if self.counter >= self.patience:
+            self.early_stop = True
+        
         return self.early_stop
 
-# ----------------------- MODEL DEFINITION --------------------------
+def init_weights(m):
+    """Initialize weights using He initialization"""
+    if isinstance(m, nn.Linear):
+        torch.nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
+        if m.bias is not None:
+            torch.nn.init.constant_(m.bias, 0)
+
 class ConfigurableModel(nn.Module):
-    def __init__(self, cfg):
+    """Configurable neural network architecture"""
+    def __init__(self, config):
         super().__init__()
-        self.cfg = cfg
+        self.config = config
+        
+        # Input/output dimensions
+        input_dim = 4242
+        output_dim = 303
+        
+        # Build layers
         self.flatten = nn.Flatten()
-        self.layers, self.bns, self.drops = nn.ModuleList(), nn.ModuleList(), nn.ModuleList()
-
-        prev = 4242
-        for h, drop in zip(cfg["hidden_dims"], cfg["dropouts"]):
-            self.layers.append(nn.Linear(prev, h))
-            self.bns.append(nn.BatchNorm1d(h) if cfg["batch_norm"] else None)
-            self.drops.append(nn.Dropout(drop))
-            prev = h
-
-        self.head = nn.Linear(prev, 303)
-        self.apply(self._init)
-
-    @staticmethod
-    def _init(m):
-        if isinstance(m, nn.Linear):
-            nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
-            if m.bias is not None:
-                nn.init.zeros_(m.bias)
-
-    def _act(self, x):
-        act = self.cfg["activation"]
-        if act == "relu":   return F.relu(x)
-        if act == "gelu":   return F.gelu(x)
-        if act == "swish":  return F.silu(x)
-        if act == "tanh":   return torch.tanh(x)          # fixed
-        if act == "leaky_relu": return F.leaky_relu(x, 0.1)
-        return x  # linear
-
+        self.layers = nn.ModuleList()
+        self.batch_norms = nn.ModuleList()
+        self.dropouts = nn.ModuleList()
+        
+        # Hidden layers
+        prev_dim = input_dim
+        for i in range(config['n_layers']):
+            # Linear layer
+            self.layers.append(nn.Linear(prev_dim, config['hidden_dims'][i]))
+            
+            # Batch normalization
+            if config['use_batch_norm']:
+                self.batch_norms.append(nn.BatchNorm1d(config['hidden_dims'][i]))
+            else:
+                self.batch_norms.append(None)
+            
+            # Dropout
+            self.dropouts.append(nn.Dropout(config['dropout_rates'][i]))
+            
+            prev_dim = config['hidden_dims'][i]
+        
+        # Output layer
+        self.output_layer = nn.Linear(prev_dim, output_dim)
+        
+        # Initialize weights
+        self.apply(init_weights)
+    
     def forward(self, x):
         x = self.flatten(x)
-        for l, bn, dr in zip(self.layers, self.bns, self.drops):
-            x = self._act(l(x))
-            if bn is not None:
-                x = bn(x)
-            x = dr(x)
-        return self.head(x)
+        
+        for i in range(self.config['n_layers']):
+            x = self.layers[i](x)
+            
+            if self.config['use_batch_norm'] and self.batch_norms[i] is not None:
+                x = self.batch_norms[i](x)
+            
+            # Activation function
+            if self.config['activation'] == 'relu':
+                x = F.relu(x)
+            elif self.config['activation'] == 'gelu':
+                x = F.gelu(x)
+            elif self.config['activation'] == 'swish':
+                x = F.silu(x)
+            elif self.config['activation'] == 'tanh':
+                x = torch.tanh(x)
+            elif self.config['activation'] == 'leaky_relu':
+                x = F.leaky_relu(x, 0.1)
+            
+            x = self.dropouts[i](x)
+        
+        return self.output_layer(x)
 
-# ------------------------ DATA PIPELINE ----------------------------
-class Dataset(torch.utils.data.Dataset):
-    def __init__(self, root, dtype, split, fold):
-        d = np.load(join(root, f"{fold}_fold_final_{split}.npz"))
-        self.X = torch.from_numpy(d[f"final_X_{split}"]).float()
-        self.Y = torch.from_numpy(d[f"final_Y_{dtype}_{split}"]).float()
-
-    def __len__(self):  return len(self.X)
-    def __getitem__(self, i): return self.X[i], self.Y[i]
-
-# --------------------- TRAINING UTILITIES --------------------------
 class RMSELoss(nn.Module):
+    """Root Mean Square Error loss"""
     def __init__(self, eps=1e-8):
         super().__init__()
-        self.mse, self.eps = nn.MSELoss(), eps
-    def forward(self, p, t):
-        return torch.sqrt(self.mse(p, t) + self.eps)
+        self.mse = nn.MSELoss()
+        self.eps = eps
+    
+    def forward(self, pred, target):
+        return torch.sqrt(self.mse(pred, target) + self.eps)
 
-def make_loss(name):
-    return {"rmse": RMSELoss(), "mse": nn.MSELoss(),
-            "mae": nn.L1Loss(), "huber": nn.HuberLoss()}[name]
+class Dataset(torch.utils.data.Dataset):
+    """Custom dataset for IMU data"""
+    def __init__(self, dataset_dir, data_type, session, fold):
+        self.data_type = data_type
+        self.session = session
+        
+        # Load data
+        data_file = join(dataset_dir, f"{fold}_fold_final_{session}.npz")
+        data = np.load(data_file)
+        
+        self.X = torch.from_numpy(data[f'final_X_{session}']).squeeze().float()
+        self.Y = torch.from_numpy(data[f'final_Y_{data_type}_{session}']).squeeze().float()
+    
+    def __len__(self):
+        return len(self.X)
+    
+    def __getitem__(self, idx):
+        return self.X[idx], self.Y[idx]
 
-def make_opt(model, kind, lr, wd):
-    if kind == "adam":   return torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
-    if kind == "nadam":  return torch.optim.NAdam(model.parameters(), lr=lr, weight_decay=wd)
-    if kind == "adamw":  return torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
-    if kind == "sgd":    return torch.optim.SGD(model.parameters(), lr=lr, weight_decay=wd, momentum=0.9)
-    raise ValueError(kind)
+def create_loss_function(loss_type):
+    """Create loss function based on type"""
+    if loss_type == 'rmse':
+        return RMSELoss()
+    elif loss_type == 'mse':
+        return nn.MSELoss()
+    elif loss_type == 'mae':
+        return nn.L1Loss()
+    elif loss_type == 'huber':
+        return nn.HuberLoss()
+    else:
+        raise ValueError(f"Unknown loss type: {loss_type}")
 
-def nrmse_axis(pred, true, axis, scaler):
-    idx = {"x":0,"y":1,"z":2}[axis]
-    nrmse = 0.0
-    for p, t in zip(pred, true):
-        p_axis = p.view(3, -1).t()[:, idx]
-        t_axis = t.view(3, -1).t()[:, idx]
+def create_optimizer(model, optimizer_type, lr, weight_decay):
+    """Create optimizer based on type"""
+    if optimizer_type == 'adam':
+        return torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    elif optimizer_type == 'nadam':
+        return torch.optim.NAdam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    elif optimizer_type == 'adamw':
+        return torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    elif optimizer_type == 'sgd':
+        return torch.optim.SGD(model.parameters(), lr=lr, weight_decay=weight_decay, momentum=0.9)
+    else:
+        raise ValueError(f"Unknown optimizer type: {optimizer_type}")
 
-        # denormalise:  x * scale + min
-        p_axis = p_axis * scaler.scale_[idx] + scaler.min_[idx]
-        t_axis = t_axis * scaler.scale_[idx] + scaler.min_[idx]
+def nRMSE_axis_batch(pred, target, axis, scaler):
+    """Calculate normalized RMSE for specific axis"""
+    axis_map = {'x': 0, 'y': 1, 'z': 2}
+    axis_idx = axis_map[axis]
+    
+    batch_nrmse = 0
+    batch_size = len(target)
+    
+    for i in range(batch_size):
+        # Reshape to [timesteps, 3] and extract axis
+        pred_axis = pred[i].view(3, -1).t()[:, axis_idx]
+        target_axis = target[i].view(3, -1).t()[:, axis_idx]
+        
+        # Denormalize
+        pred_axis = pred_axis * scaler.scale_[axis_idx] + scaler.min_[axis_idx]
+        target_axis = target_axis * scaler.scale_[axis_idx] + scaler.min_[axis_idx]
+        
+        # Calculate nRMSE
+        rmse = torch.sqrt(torch.mean((pred_axis - target_axis) ** 2))
+        range_val = torch.max(target_axis) - torch.min(target_axis)
+        nrmse = 100 * rmse / range_val
+        
+        batch_nrmse += nrmse.item()
+    
+    return batch_nrmse
 
-        rng  = torch.max(t_axis) - torch.min(t_axis)
-        if rng > 0:
-            nrmse += 100.0 * torch.sqrt(torch.mean((p_axis - t_axis) ** 2)) / rng
-    return nrmse / len(pred)
+def evaluate(model, data_loader, criterion, scaler):
+    """Evaluate model and return loss and per-axis nRMSE"""
+    model.eval()
+    total_loss = 0
+    samples = 0
+    x_nrmse = 0
+    y_nrmse = 0
+    z_nrmse = 0
+    with torch.no_grad():
+        for data, target in data_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            loss = criterion(output, target)
+            total_loss += loss.item() * data.size(0)
+            samples += data.size(0)
+            x_nrmse += nRMSE_axis_batch(output, target, 'x', scaler)
+            y_nrmse += nRMSE_axis_batch(output, target, 'y', scaler)
+            z_nrmse += nRMSE_axis_batch(output, target, 'z', scaler)
 
-# --------------------- OPTUNA SUGGESTIONS --------------------------
-def suggest_arch(trial):
-    n_layers = trial.suggest_int("n_layers", 2, 4)
-    hidden   = [trial.suggest_int(f"h{i}", 256, 1024) for i in range(n_layers)]
-    if total_params(hidden) > MAX_PARAMETERS:
+    total_loss /= samples
+    x_nrmse /= samples
+    y_nrmse /= samples
+    z_nrmse /= samples
+
+    return total_loss, x_nrmse, y_nrmse, z_nrmse
+
+def suggest_architecture(trial):
+    """Suggest architecture hyperparameters with memory safety"""
+    # Number of layers
+    n_layers = trial.suggest_int('n_layers', 2, 6)
+    
+    # Architecture pattern
+    pattern = trial.suggest_categorical('arch_pattern', ['decreasing', 'increasing', 'pyramid', 'uniform'])
+    
+    # Layer size range
+    min_size = trial.suggest_int('min_layer_size', 512, 2048)
+    max_size = trial.suggest_int('max_layer_size', 2048, 8192)
+    
+    if min_size > max_size:
+        min_size, max_size = max_size, min_size
+    
+    # Generate layer sizes based on pattern
+    if pattern == 'decreasing':
+        sizes = np.linspace(max_size, min_size, n_layers, dtype=int)
+    elif pattern == 'increasing':
+        sizes = np.linspace(min_size, max_size, n_layers, dtype=int)
+    elif pattern == 'pyramid':
+        mid = n_layers // 2
+        up = np.linspace(min_size, max_size, mid + 1, dtype=int)
+        down = np.linspace(max_size, min_size, n_layers - mid, dtype=int)[1:]
+        sizes = np.concatenate([up, down])
+    else:  # uniform
+        size = trial.suggest_int('uniform_size', min_size, max_size)
+        sizes = np.full(n_layers, size)
+    
+    # MEMORY SAFETY CHECK: Calculate total parameters
+    total_params = calculate_total_parameters(sizes)
+    print(f"    Checking architecture {sizes.tolist()}: {total_params:,} parameters")
+    
+    if total_params > MAX_PARAMETERS:
+        print(f"    ❌ Architecture exceeds {MAX_PARAMETERS:,} parameter limit, pruning trial")
         raise optuna.exceptions.TrialPruned()
+    
+    print(f"    ✅ Architecture within memory limits")
+    
+    # Dropout rates
+    dropout_rates = []
+    for i in range(n_layers):
+        dropout_rates.append(trial.suggest_float(f'dropout_{i}', 0.1, 0.7))
+    
+    return {
+        'n_layers': n_layers,
+        'hidden_dims': sizes.tolist(),
+        'dropout_rates': dropout_rates,
+        'use_batch_norm': trial.suggest_categorical('batch_norm', [True, False]),
+        'activation': trial.suggest_categorical('activation', ['relu', 'gelu', 'swish', 'tanh', 'leaky_relu'])
+    }
 
-    cfg = dict(
-        n_layers   = n_layers,
-        hidden_dims= hidden,
-        dropouts   = [trial.suggest_float(f"d{i}", 0.1, 0.5) for i in range(n_layers)],
-        batch_norm = trial.suggest_categorical("batch_norm", [True, False]),
-        activation = trial.suggest_categorical("act", ["relu", "gelu", "swish", "tanh", "leaky_relu"])
-    )
-    return cfg
+def suggest_training_params(trial):
+    """Suggest training hyperparameters"""
+    return {
+        'learning_rate': trial.suggest_float('lr', 1e-5, 1e-2, log=True),
+        'batch_size': trial.suggest_categorical('batch_size', [16, 32, 64, 128, 256]),
+        'optimizer': trial.suggest_categorical('optimizer', ['adam', 'nadam', 'adamw', 'sgd']),
+        'loss_function': trial.suggest_categorical('loss_function', ['rmse', 'mse', 'mae', 'huber']),
+        'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-2, log=True),
+        'use_scheduler': trial.suggest_categorical('use_scheduler', [True, False]),
+        'scheduler_patience': trial.suggest_int('scheduler_patience', 5, 25),
+        'scheduler_factor': trial.suggest_float('scheduler_factor', 0.1, 0.8),
+        'early_stopping_patience': trial.suggest_int('early_stopping_patience', 20, 40),  # Range around trial patience
+        'max_grad_norm': trial.suggest_float('max_grad_norm', 0.5, 5.0)
+    }
 
-def suggest_train(trial):
-    return dict(
-        lr      = trial.suggest_float("lr", 1e-5, 1e-3, log=True),
-        batch   = trial.suggest_categorical("batch", [32, 64, 128]),
-        opt     = trial.suggest_categorical("opt", ["adam", "adamw", "nadam"]),
-        loss    = trial.suggest_categorical("loss", ["rmse", "mse", "mae"]),
-        wd      = trial.suggest_float("wd", 1e-6, 1e-3, log=True),
-        sched   = trial.suggest_categorical("sched", [True, False]),
-        sched_pat = trial.suggest_int("sched_pat", 5, 20),
-        sched_fac = trial.suggest_float("sched_fac", 0.1, 0.7),
-        clip    = trial.suggest_float("clip", 0.5, 5.0)
-    )
-
-# ------------------------- TRAIN LOOP ------------------------------
-def train_eval(model, tr_loader, va_loader, cfg_opt, scaler,
-               max_epochs, trial=None, logdir=None):
-    loss_fn = make_loss(cfg_opt["loss"])
-    opt     = make_opt(model, cfg_opt["opt"], cfg_opt["lr"], cfg_opt["wd"])
-    sched   = None
-    if cfg_opt["sched"]:
-        sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            opt, mode="min", factor=cfg_opt["sched_fac"],
-            patience=cfg_opt["sched_pat"], min_lr=1e-7
-        )
-
-    es = EarlyStopping(patience=EARLY_STOP_PATIENCE)
-    es.max_grad_norm = cfg_opt["clip"]
-
-    tw = SummaryWriter(logdir) if logdir else None
-    best, best_state = float("inf"), None
-
+def train_and_evaluate(model, train_loader, val_loader, criterion, optimizer, scheduler,
+                      early_stopping, scaler, max_epochs, trial=None, fold=None,
+                      log_dir=None, is_final=False):
+    """Train and evaluate model with comprehensive logging"""
+    
+    # Setup TensorBoard logging
+    if log_dir:
+        train_writer = SummaryWriter(join(log_dir, 'train'))
+        val_writer = SummaryWriter(join(log_dir, 'val'))
+        
+        # Add model graph
+        dummy_input = torch.randn(1, 4242).to(device)
+        train_writer.add_graph(model, dummy_input)
+    else:
+        train_writer = val_writer = None
+    
+    best_val_loss = float('inf')
+    best_model_state = None
+    
     for epoch in range(max_epochs):
-        # --- train ---
-        model.train(); tr_loss = 0; tr_x = tr_y = tr_z = 0; n = 0
-        for X, y in tqdm(tr_loader, leave=False, desc=f"Epoch {epoch+1}/{max_epochs}"):
-            X, y = X.to(device), y.to(device)
-            opt.zero_grad()
-            out = model(X)
-            loss = loss_fn(out, y)
+        # Training phase
+        model.train()
+        train_loss = 0
+        train_samples = 0
+        train_x_nrmse = 0
+        train_y_nrmse = 0
+        train_z_nrmse = 0
+        
+        train_bar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{max_epochs}', leave=False)
+        
+        for batch_idx, (data, target) in enumerate(train_bar):
+            data, target = data.to(device), target.to(device)
+            
+            optimizer.zero_grad()
+            output = model(data)
+            loss = criterion(output, target)
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), es.max_grad_norm)
-            opt.step()
-
-            bs = X.size(0)
-            tr_loss += loss.item() * bs
-            n += bs
-            tr_x += nrmse_axis(out, y, "x", scaler) * bs
-            tr_y += nrmse_axis(out, y, "y", scaler) * bs
-            tr_z += nrmse_axis(out, y, "z", scaler) * bs
-
-        tr_loss, tr_x, tr_y, tr_z = tr_loss/n, tr_x/n, tr_y/n, tr_z/n
-
-        # --- validate ---
-        model.eval(); va_loss = 0; va_x = va_y = va_z = 0; n=0
+            
+            # Gradient clipping
+            if hasattr(early_stopping, 'max_grad_norm'):
+                torch.nn.utils.clip_grad_norm_(model.parameters(), early_stopping.max_grad_norm)
+            
+            optimizer.step()
+            
+            train_loss += loss.item() * data.size(0)
+            train_samples += data.size(0)
+            
+            # Calculate nRMSE
+            train_x_nrmse += nRMSE_axis_batch(output, target, 'x', scaler)
+            train_y_nrmse += nRMSE_axis_batch(output, target, 'y', scaler)
+            train_z_nrmse += nRMSE_axis_batch(output, target, 'z', scaler)
+            
+            train_bar.set_postfix({'loss': loss.item()})
+        
+        # Average training metrics
+        train_loss /= train_samples
+        train_x_nrmse /= train_samples
+        train_y_nrmse /= train_samples
+        train_z_nrmse /= train_samples
+        
+        # Validation phase
+        model.eval()
+        val_loss = 0
+        val_samples = 0
+        val_x_nrmse = 0
+        val_y_nrmse = 0
+        val_z_nrmse = 0
+        
         with torch.no_grad():
-            for X, y in va_loader:
-                X, y = X.to(device), y.to(device)
-                out  = model(X)
-                loss = loss_fn(out, y)
-                bs   = X.size(0)
-                va_loss += loss.item() * bs
-                n += bs
-                va_x += nrmse_axis(out, y, "x", scaler) * bs
-                va_y += nrmse_axis(out, y, "y", scaler) * bs
-                va_z += nrmse_axis(out, y, "z", scaler) * bs
-        va_loss, va_x, va_y, va_z = va_loss/n, va_x/n, va_y/n, va_z/n
-
-        if tw:
-            tw.add_scalar("train/loss", tr_loss, epoch)
-            tw.add_scalar("val/loss", va_loss, epoch)
-
-        if va_loss < best:
-            best, best_state = va_loss, {k:v.cpu() for k,v in model.state_dict().items()}
-
-        if sched:
-            sched.step(va_loss)
-
-        if es(va_loss):
+            for data, target in val_loader:
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                loss = criterion(output, target)
+                
+                val_loss += loss.item() * data.size(0)
+                val_samples += data.size(0)
+                
+                val_x_nrmse += nRMSE_axis_batch(output, target, 'x', scaler)
+                val_y_nrmse += nRMSE_axis_batch(output, target, 'y', scaler)
+                val_z_nrmse += nRMSE_axis_batch(output, target, 'z', scaler)
+        
+        # Average validation metrics
+        val_loss /= val_samples
+        val_x_nrmse /= val_samples
+        val_y_nrmse /= val_samples
+        val_z_nrmse /= val_samples
+        
+        # TensorBoard logging
+        if train_writer and val_writer:
+            # Training metrics
+            train_writer.add_scalar('Loss', train_loss, epoch)
+            train_writer.add_scalar('X_nRMSE', train_x_nrmse, epoch)
+            train_writer.add_scalar('Y_nRMSE', train_y_nrmse, epoch)
+            train_writer.add_scalar('Z_nRMSE', train_z_nrmse, epoch)
+            train_writer.add_scalar('Learning_Rate', optimizer.param_groups[0]['lr'], epoch)
+            
+            # Validation metrics
+            val_writer.add_scalar('Loss', val_loss, epoch)
+            val_writer.add_scalar('X_nRMSE', val_x_nrmse, epoch)
+            val_writer.add_scalar('Y_nRMSE', val_y_nrmse, epoch)
+            val_writer.add_scalar('Z_nRMSE', val_z_nrmse, epoch)
+            
+            # Overfitting detection
+            overfitting_gap = train_loss - val_loss
+            train_writer.add_scalar('Overfitting_Gap', overfitting_gap, epoch)
+            val_writer.add_scalar('Overfitting_Gap', overfitting_gap, epoch)
+            
+            # Gradient norm
+            total_grad_norm = 0
+            for param in model.parameters():
+                if param.grad is not None:
+                    total_grad_norm += param.grad.data.norm(2).item() ** 2
+            total_grad_norm = total_grad_norm ** 0.5
+            train_writer.add_scalar('Gradient_Norm', total_grad_norm, epoch)
+        
+        # Save best model
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_model_state = model.state_dict().copy()
+        
+        # Learning rate scheduling
+        if scheduler:
+            scheduler.step(val_loss)
+        
+        # Early stopping
+        if early_stopping(val_loss):
+            print(f"Early stopping at epoch {epoch+1}")
             break
-
+        
+        # Pruning for Optuna trials
         if trial and epoch % PRUNING_INTERVAL == 0:
-            trial.report(va_loss, epoch)
+            trial.report(val_loss, epoch)
             if trial.should_prune():
+                if train_writer:
+                    train_writer.close()
+                if val_writer:
+                    val_writer.close()
                 raise optuna.exceptions.TrialPruned()
+        
+        # Progress logging
+        if is_final and epoch % 10 == 0:
+            print(f'Epoch {epoch+1}: Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
+            print(f'  Train nRMSE - X: {train_x_nrmse:.4f}, Y: {train_y_nrmse:.4f}, Z: {train_z_nrmse:.4f}')
+            print(f'  Val nRMSE - X: {val_x_nrmse:.4f}, Y: {val_y_nrmse:.4f}, Z: {val_z_nrmse:.4f}')
+            
+            overfitting_gap = train_loss - val_loss
+            print(f'  Overfitting Gap: {overfitting_gap:.4f}')
+            if overfitting_gap > 0.02:
+                print(f'  ⚠️  WARNING: Potential overfitting detected!')
+    
+    # Restore best model
+    if best_model_state:
+        model.load_state_dict(best_model_state)
+    
+    # Close writers
+    if train_writer:
+        train_writer.close()
+    if val_writer:
+        val_writer.close()
 
-    if best_state:
-        model.load_state_dict(best_state)
-    if tw:
-        tw.close()
-    return best
+    return best_val_loss, best_model_state
 
-# ------------------------- OPTUNA OBJECTIVE ------------------------
 def objective(trial):
-    clear_gpu()
-    arch = suggest_arch(trial)
-    train_cfg = suggest_train(trial)
+    """Optuna objective function with memory management"""
+    
+    try:
+        # Clear GPU memory at start of each trial
+        clear_gpu_memory()
+        
+        # Get hyperparameters
+        arch_config = suggest_architecture(trial)
+        train_config = suggest_training_params(trial)
+        
+        print(f"\nTrial {trial.number}:")
+        print(f"  Architecture: {arch_config['n_layers']} layers, {arch_config['hidden_dims']}")
+        print(f"  Training: lr={train_config['learning_rate']:.2e}, batch={train_config['batch_size']}")
+        
+        fold_scores = []
+        
+        # Cross-validation
+        for fold in range(N_FOLDS):
+            print(f'  Fold {fold+1}/{N_FOLDS}')
+            
+            # Clear memory before each fold
+            clear_gpu_memory()
+            
+            # Create model
+            model = ConfigurableModel(arch_config).to(device)
+            
+            # Load full training dataset and split into train/validation
+            full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
+            val_ratio = 0.2
+            train_size = int(len(full_dataset) * (1 - val_ratio))
+            val_size = len(full_dataset) - train_size
+            train_dataset, val_dataset = torch.utils.data.random_split(
+                full_dataset,
+                [train_size, val_size],
+                generator=torch.Generator().manual_seed(42)
+            )
 
-    scores = []
-    for fold in range(N_FOLDS):
-        ds_full = Dataset(DATASET_DIR, DATA_TYPE, "train", fold)
-        val_ratio = 0.2
-        tr_size   = int(len(ds_full)*(1-val_ratio))
-        va_size   = len(ds_full) - tr_size
-        tr_ds, va_ds = torch.utils.data.random_split(
-            ds_full, [tr_size, va_size],
-            generator=torch.Generator().manual_seed(42+fold))
+            train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True, drop_last=True)
+            val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False)
+            
+            # Create optimizer and loss
+            criterion = create_loss_function(train_config['loss_function'])
+            optimizer = create_optimizer(model, train_config['optimizer'], 
+                                       train_config['learning_rate'], train_config['weight_decay'])
+            
+            # Create scheduler
+            scheduler = None
+            if train_config['use_scheduler']:
+                scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, mode='min', factor=train_config['scheduler_factor'],
+                    patience=train_config['scheduler_patience'], min_lr=1e-7
+                )
+            
+            # Early stopping using sampled patience
+            early_stopping = EarlyStopping(
+                patience=train_config['early_stopping_patience'],
+                min_delta=0.001
+            )
+            early_stopping.max_grad_norm = train_config['max_grad_norm']
+            
+            # Load scaler
+            scaler = load(open(join(DATASET_DIR, f"{fold}_fold_scaler4Y_{DATA_TYPE}.pkl"), 'rb'))
+            
+            # Setup logging
+            log_dir = join(LOGS_DIR, 'trials', f'trial_{trial.number}', f'fold_{fold}')
+            ensure_dir(log_dir)
+            
+            # Train and evaluate on training/validation splits
+            best_val_loss, _ = train_and_evaluate(
+                model, train_loader, val_loader, criterion, optimizer, scheduler,
+                early_stopping, scaler, MAX_EPOCHS_TRIAL, trial, fold, log_dir
+            )
+            
+            fold_scores.append(best_val_loss)
+            
+            # Clean up model and optimizer
+            del model, optimizer, criterion
+            if scheduler:
+                del scheduler
+            clear_gpu_memory()
+        
+        mean_score = np.mean(fold_scores)
+        print(f"  Trial {trial.number} completed: {mean_score:.4f} ± {np.std(fold_scores):.4f}")
+        
+        return mean_score
+        
+    except Exception as e:
+        print(f"  Trial {trial.number} failed with error: {str(e)}")
+        clear_gpu_memory()
+        raise
 
-        tr_ld = DataLoader(tr_ds, batch_size=train_cfg["batch"], shuffle=True, drop_last=True)
-        va_ld = DataLoader(va_ds, batch_size=train_cfg["batch"], shuffle=False)
-
-        mdl = ConfigurableModel(dict(
-            hidden_dims = arch["hidden_dims"],
-            dropouts    = arch["dropouts"],
-            batch_norm  = arch["batch_norm"],
-            activation  = arch["activation"]
-        )).to(device)
-
-        scaler = load(open(join(DATASET_DIR, f"{fold}_fold_scaler4Y_{DATA_TYPE}.pkl"), "rb"))
-        best = train_eval(mdl, tr_ld, va_ld, train_cfg, scaler, MAX_EPOCHS_TRIAL, trial)
-        scores.append(best)
-
-        del mdl, tr_ld, va_ld; clear_gpu()
-
-    return float(np.mean(scores))
-
-# ------------------------------- MAIN ------------------------------
 def main():
-    print(f"Device: {device} | Param cap: {MAX_PARAMETERS:,}")
-    study_name = f"arch_search_{timestamp}"
-    storage    = f"sqlite:///{join(OPTUNA_DIR, study_name)}.db"
-
+    """Main function"""
+    
+    print("Starting Optuna Hyperparameter Optimization")
+    print("=" * 50)
+    print(f"Memory Safety: Maximum {MAX_PARAMETERS:,} parameters per model")
+    print("=" * 50)
+    
+    # Create study
+    study_name = f"architecture_search_{timestamp}"
+    storage = f"sqlite:///{join(OPTUNA_DIR, study_name)}.db"
+    
     study = optuna.create_study(
-        direction="minimize",
-        sampler=optuna.samplers.TPESampler(),
-        pruner = optuna.pruners.MedianPruner(n_warmup_steps=5),
+        direction='minimize',
+        sampler=optuna.samplers.TPESampler(n_startup_trials=10),
+        pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=5),
         study_name=study_name,
         storage=storage,
         load_if_exists=True
     )
+    
+    # Run optimization
     study.optimize(objective, n_trials=N_TRIALS)
+    
+    # Results
+    print("\n" + "=" * 50)
+    print("OPTIMIZATION COMPLETED")
+    print("=" * 50)
+    print(f"Best trial: {study.best_trial.number}")
+    print(f"Best value: {study.best_value:.4f}")
+    print("\nBest parameters:")
+    for key, value in study.best_params.items():
+        print(f"  {key}: {value}")
+    
+    # Save results
+    results = {
+        'best_trial': study.best_trial.number,
+        'best_value': study.best_value,
+        'best_params': study.best_params,
+        'n_trials': len(study.trials),
+        'max_parameters_limit': MAX_PARAMETERS
+    }
+    
+    with open(join(OPTUNA_DIR, f'results_{study_name}.json'), 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    # Train final models
+    print("\n" + "=" * 50)
+    print("TRAINING FINAL MODELS")
+    print("=" * 50)
+    
+    # Get best configurations
+    best_trial = study.best_trial
+    arch_config = suggest_architecture(best_trial)
+    train_config = suggest_training_params(best_trial)
+    
+    # Train final models for each fold
+    for fold in range(N_FOLDS):
+        print(f'Training final model - Fold {fold+1}/{N_FOLDS}')
+        
+        # Clear memory before each fold
+        clear_gpu_memory()
+        
+        # Create model
+        model = ConfigurableModel(arch_config).to(device)
+        
+        # Prepare training and validation splits
+        full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
+        val_ratio = 0.2
+        train_size = int(len(full_dataset) * (1 - val_ratio))
+        val_size = len(full_dataset) - train_size
+        train_dataset, val_dataset = torch.utils.data.random_split(
+            full_dataset,
+            [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)
+        )
 
-    print("Best value:", study.best_value)
-    print("Best params:", study.best_params)
-    with open(join(OPTUNA_DIR, f"results_{study_name}.json"), "w") as f:
-        json.dump({
-            "best_trial": study.best_trial.number,
-            "best_value": study.best_value,
-            "best_params": study.best_params,
-            "n_trials": len(study.trials),
-            "param_cap": MAX_PARAMETERS
-        }, f, indent=2)
+        test_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'test', fold)
+
+        train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False)
+        
+        # Create optimizer and loss
+        criterion = create_loss_function(train_config['loss_function'])
+        optimizer = create_optimizer(model, train_config['optimizer'], 
+                                   train_config['learning_rate'], train_config['weight_decay'])
+        
+        # Create scheduler
+        scheduler = None
+        if train_config['use_scheduler']:
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer, mode='min', factor=train_config['scheduler_factor'],
+                patience=train_config['scheduler_patience'], min_lr=1e-7
+            )
+        
+        # Early stopping using sampled patience
+        early_stopping = EarlyStopping(
+            patience=train_config['early_stopping_patience'],
+            min_delta=0.001
+        )
+        early_stopping.max_grad_norm = train_config['max_grad_norm']
+        
+        # Load scaler
+        scaler = load(open(join(DATASET_DIR, f"{fold}_fold_scaler4Y_{DATA_TYPE}.pkl"), 'rb'))
+        
+        # Setup logging
+        log_dir = join(LOGS_DIR, 'final_models', f'fold_{fold}')
+        ensure_dir(log_dir)
+        
+        # Train final model using validation set for early stopping
+        best_val_loss, _ = train_and_evaluate(
+            model, train_loader, val_loader, criterion, optimizer, scheduler,
+            early_stopping, scaler, MAX_EPOCHS_FINAL, None, fold, log_dir, is_final=True
+        )
+
+        # Evaluate best model on train and test sets
+        train_loss, train_x_nrmse, train_y_nrmse, train_z_nrmse = evaluate(model, train_loader, criterion, scaler)
+        test_loss, test_x_nrmse, test_y_nrmse, test_z_nrmse = evaluate(model, test_loader, criterion, scaler)
+
+        # Log final metrics
+        writer_train = SummaryWriter(join(log_dir, 'train'))
+        writer_test = SummaryWriter(join(log_dir, 'test'))
+        writer_train.add_hparams(
+            {
+                'sess': 'train',
+                'Type': DATA_TYPE,
+                'lr': train_config['learning_rate'],
+                'bsize': train_config['batch_size'],
+                'DS': DATASET_NAME,
+                'lossFunc': train_config['loss_function'],
+            },
+            {
+                'loss': train_loss,
+                'X_nRMSE': train_x_nrmse,
+                'Y_nRMSE': train_y_nrmse,
+                'Z_nRMSE': train_z_nrmse,
+            },
+        )
+        writer_test.add_hparams(
+            {
+                'sess': 'test',
+                'Type': DATA_TYPE,
+                'lr': train_config['learning_rate'],
+                'bsize': train_config['batch_size'],
+                'DS': DATASET_NAME,
+                'lossFunc': train_config['loss_function'],
+            },
+            {
+                'loss': test_loss,
+                'X_nRMSE': test_x_nrmse,
+                'Y_nRMSE': test_y_nrmse,
+                'Z_nRMSE': test_z_nrmse,
+            },
+        )
+        writer_train.close()
+        writer_test.close()
+        
+        # Save model
+        model_dir = join(MODELS_DIR, 'final_models')
+        ensure_dir(model_dir)
+        
+        model_path = join(model_dir, f'{DATA_TYPE}_fold_{fold}_optuna_best.pt')
+        torch.jit.script(model).save(model_path)
+
+        print(f'  Final model saved: {model_path}')
+        print(f'  Best validation loss: {best_val_loss:.4f}')
+        print(f'  Test loss: {test_loss:.4f} (X:{test_x_nrmse:.4f}, Y:{test_y_nrmse:.4f}, Z:{test_z_nrmse:.4f})')
+        
+        # Clean up
+        del model, optimizer, criterion
+        if scheduler:
+            del scheduler
+        clear_gpu_memory()
+    
+    print("\n" + "=" * 50)
+    print("TRAINING COMPLETED")
+    print("=" * 50)
+    print(f"Study database: {storage}")
+    print(f"Results saved to: {join(OPTUNA_DIR, f'results_{study_name}.json')}")
+    print(f"Final models saved to: {join(MODELS_DIR, 'final_models')}")
+    print(f"TensorBoard logs: {LOGS_DIR}")
+    print(f"Memory limit used: {MAX_PARAMETERS:,} parameters")
+    print("\nTo view results:")
+    print(f"  optuna-dashboard {storage}")
+    print(f"  tensorboard --logdir {LOGS_DIR}")
 
 if __name__ == "__main__":
+    install_requirements()
     main()
