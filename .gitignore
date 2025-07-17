@@ -9,4 +9,4 @@ preperation/NORM_CORRECTION
 preperation/SAVE_dataSet
 
 *.egg
-*.pyc
+*.pyc"*.xlsx" 
