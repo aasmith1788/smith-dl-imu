@@ -23,10 +23,12 @@ import json
 from os.path import join
 from pickle import load
 import numpy as np
+import pandas as pd
+from sklearn.model_selection import KFold, train_test_split
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import optuna
@@ -40,7 +42,7 @@ def install_package(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 required_packages = [
-    "torch", "torchvision", "torchaudio", "numpy", "tqdm", 
+    "torch", "torchvision", "torchaudio", "numpy", "pandas", "scikit-learn", "tqdm",
     "tensorboard", "optuna", "optuna-dashboard"
 ]
 
@@ -78,6 +80,8 @@ OUTPUT_DIR = r'R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Lear
 MODELS_DIR = join(OUTPUT_DIR, 'models')
 LOGS_DIR = join(OUTPUT_DIR, 'logs')
 OPTUNA_DIR = join(OUTPUT_DIR, 'optuna_studies')
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+META_CSV_PATH = join(REPO_ROOT, 'preperation', 'afterPDFCHKforSenddance.csv')
 
 # Device setup
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -238,6 +242,34 @@ class Dataset(torch.utils.data.Dataset):
     
     def __getitem__(self, idx):
         return self.X[idx], self.Y[idx]
+
+def get_train_val_indices(fold, val_ratio=0.2, random_state=42):
+    """Return dataset indices for train/validation splits without mixing participants."""
+    df = pd.read_csv(META_CSV_PATH)
+    participants = df["patientID"].unique()
+    kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=41)
+
+    for i, (train_idx, test_idx) in enumerate(kf.split(participants)):
+        if i == fold:
+            train_subjects = participants[train_idx]
+            break
+
+    # Ordered list of csv indices for train subjects
+    train_csv_indices = [idx for idx, pid in enumerate(df["patientID"]) if pid in train_subjects]
+
+    # Map dataset index -> participant id
+    groups = {}
+    for ds_idx, csv_idx in enumerate(train_csv_indices):
+        pid = df.loc[csv_idx, "patientID"]
+        groups.setdefault(pid, []).append(ds_idx)
+
+    train_subj, val_subj = train_test_split(
+        list(groups.keys()), test_size=val_ratio, random_state=random_state, shuffle=True
+    )
+
+    train_indices = [idx for s in train_subj for idx in groups[s]]
+    val_indices = [idx for s in val_subj for idx in groups[s]]
+    return train_indices, val_indices
 
 def create_loss_function(loss_type):
     """Create loss function based on type"""
@@ -575,14 +607,9 @@ def objective(trial):
             
             # Load full training dataset and split into train/validation
             full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
-            val_ratio = 0.2
-            train_size = int(len(full_dataset) * (1 - val_ratio))
-            val_size = len(full_dataset) - train_size
-            train_dataset, val_dataset = torch.utils.data.random_split(
-                full_dataset,
-                [train_size, val_size],
-                generator=torch.Generator().manual_seed(42)
-            )
+            train_idx, val_idx = get_train_val_indices(fold, val_ratio=0.2, random_state=42)
+            train_dataset = Subset(full_dataset, train_idx)
+            val_dataset = Subset(full_dataset, val_idx)
 
             train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True, drop_last=True)
             val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False)
@@ -706,14 +733,9 @@ def main():
         
         # Prepare training and validation splits
         full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
-        val_ratio = 0.2
-        train_size = int(len(full_dataset) * (1 - val_ratio))
-        val_size = len(full_dataset) - train_size
-        train_dataset, val_dataset = torch.utils.data.random_split(
-            full_dataset,
-            [train_size, val_size],
-            generator=torch.Generator().manual_seed(42)
-        )
+        train_idx, val_idx = get_train_val_indices(fold, val_ratio=0.2, random_state=42)
+        train_dataset = Subset(full_dataset, train_idx)
+        val_dataset = Subset(full_dataset, val_idx)
 
         test_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'test', fold)
 
