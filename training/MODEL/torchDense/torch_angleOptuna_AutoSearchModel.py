@@ -12,7 +12,9 @@ Features:
 - Comprehensive TensorBoard logging for overfitting detection
 - Cross-validation with early stopping and pruning
 - Model saving and evaluation
-- MEMORY-SAFE: ~12M parameter limit to prevent CUDA OOM errors
+- MEMORY-SAFE: ~500K parameter limit to prevent CUDA OOM errors
+- BATCH NORM SAFE: Handles single-sample batches properly
+- FIXED: JIT scripting issue resolved
 """
 
 import subprocess
@@ -23,10 +25,12 @@ import json
 from os.path import join
 from pickle import load
 import numpy as np
+import pandas as pd
+from sklearn.model_selection import KFold, train_test_split
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import optuna
@@ -40,7 +44,7 @@ def install_package(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 required_packages = [
-    "torch", "torchvision", "torchaudio", "numpy", "tqdm", 
+    "torch", "torchvision", "torchaudio", "numpy", "pandas", "scikit-learn", "tqdm",
     "tensorboard", "optuna", "optuna-dashboard"
 ]
 
@@ -67,8 +71,8 @@ MAX_EPOCHS_FINAL = 500  # Epochs for final model training
 PRUNING_INTERVAL = 10
 
 # MEMORY MANAGEMENT SETTINGS
-# Tight limit slightly above baseline to avoid memory-hungry models
-MAX_PARAMETERS = 12_000_000
+# 500K parameter limit to fit in GPU memory efficiently
+MAX_PARAMETERS = 500_000
 
 
 # Paths
@@ -78,6 +82,8 @@ OUTPUT_DIR = r'R:\KumarLab3\PROJECTS\wesens\Data\Analysis\smith_dl\IMU Deep Lear
 MODELS_DIR = join(OUTPUT_DIR, 'models')
 LOGS_DIR = join(OUTPUT_DIR, 'logs')
 OPTUNA_DIR = join(OUTPUT_DIR, 'optuna_studies')
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+META_CSV_PATH = join(REPO_ROOT, 'preperation', 'afterPDFCHKforSenddance.csv')
 
 # Device setup
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -104,6 +110,48 @@ def calculate_total_parameters(layer_sizes, input_dim=4242, output_dim=303):
     total += prev_dim * output_dim + output_dim
     
     return total
+
+def get_max_layer_size_for_budget(n_layers, input_dim=4242, output_dim=303, budget=MAX_PARAMETERS):
+    """Calculate maximum layer size that fits within parameter budget"""
+    if n_layers == 1:
+        # Single layer: input_dim * size + size + size * output_dim + output_dim <= budget
+        # size * (input_dim + 1 + output_dim) <= budget - output_dim
+        max_size = (budget - output_dim) // (input_dim + 1 + output_dim)
+    elif n_layers == 2:
+        # Two layers: input_dim * s1 + s1 + s1 * s2 + s2 + s2 * output_dim + output_dim <= budget
+        # Assuming s1 = s2 = s for simplicity: input_dim * s + s + s^2 + s + s * output_dim + output_dim <= budget
+        # s^2 + s * (input_dim + 1 + output_dim + 1) <= budget - output_dim
+        # This is a quadratic equation, but for simplicity, let's estimate
+        a = 1
+        b = input_dim + output_dim + 2
+        c = -(budget - output_dim)
+        discriminant = b**2 - 4*a*c
+        if discriminant >= 0:
+            max_size = int((-b + np.sqrt(discriminant)) / (2*a))
+        else:
+            max_size = 16  # Fallback minimum
+    else:
+        # For more layers, use a conservative estimate
+        # Assume uniform layer sizes and approximate
+        # Total params ≈ n_layers * size^2 + input_dim * size + size * output_dim
+        # This is still an approximation, but better than the original approach
+        
+        # Use binary search to find the maximum size
+        low, high = 1, 1000
+        max_size = 1
+        
+        while low <= high:
+            mid = (low + high) // 2
+            sizes = [mid] * n_layers
+            total_params = calculate_total_parameters(sizes, input_dim, output_dim)
+            
+            if total_params <= budget:
+                max_size = mid
+                low = mid + 1
+            else:
+                high = mid - 1
+    
+    return max(1, max_size)
 
 # Generate timestamp
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -147,10 +195,17 @@ def init_weights(m):
             torch.nn.init.constant_(m.bias, 0)
 
 class ConfigurableModel(nn.Module):
-    """Configurable neural network architecture"""
+    """Configurable neural network architecture - FIXED for JIT compatibility"""
     def __init__(self, config):
         super().__init__()
-        self.config = config
+        
+        # FIXED: Store config values as individual attributes instead of dict
+        # This makes the model JIT-scriptable
+        self.n_layers = config['n_layers']
+        self.hidden_dims = config['hidden_dims']
+        self.dropout_rates = config['dropout_rates']
+        self.use_batch_norm = config['use_batch_norm']
+        self.activation = config['activation']
         
         # Input/output dimensions
         input_dim = 4242
@@ -164,20 +219,20 @@ class ConfigurableModel(nn.Module):
         
         # Hidden layers
         prev_dim = input_dim
-        for i in range(config['n_layers']):
+        for i in range(self.n_layers):
             # Linear layer
-            self.layers.append(nn.Linear(prev_dim, config['hidden_dims'][i]))
+            self.layers.append(nn.Linear(prev_dim, self.hidden_dims[i]))
             
             # Batch normalization
-            if config['use_batch_norm']:
-                self.batch_norms.append(nn.BatchNorm1d(config['hidden_dims'][i]))
+            if self.use_batch_norm:
+                self.batch_norms.append(nn.BatchNorm1d(self.hidden_dims[i]))
             else:
-                self.batch_norms.append(None)
+                self.batch_norms.append(nn.Identity())  # Use Identity instead of None
             
             # Dropout
-            self.dropouts.append(nn.Dropout(config['dropout_rates'][i]))
+            self.dropouts.append(nn.Dropout(self.dropout_rates[i]))
             
-            prev_dim = config['hidden_dims'][i]
+            prev_dim = self.hidden_dims[i]
         
         # Output layer
         self.output_layer = nn.Linear(prev_dim, output_dim)
@@ -188,22 +243,27 @@ class ConfigurableModel(nn.Module):
     def forward(self, x):
         x = self.flatten(x)
         
-        for i in range(self.config['n_layers']):
+        for i in range(self.n_layers):
             x = self.layers[i](x)
             
-            if self.config['use_batch_norm'] and self.batch_norms[i] is not None:
-                x = self.batch_norms[i](x)
+            # FIXED: Handle batch norm safely with single sample batches
+            if self.use_batch_norm:
+                if self.training and x.size(0) == 1:
+                    # Skip batch norm for single sample during training
+                    pass
+                else:
+                    x = self.batch_norms[i](x)
             
             # Activation function
-            if self.config['activation'] == 'relu':
+            if self.activation == 'relu':
                 x = F.relu(x)
-            elif self.config['activation'] == 'gelu':
+            elif self.activation == 'gelu':
                 x = F.gelu(x)
-            elif self.config['activation'] == 'swish':
+            elif self.activation == 'swish':
                 x = F.silu(x)
-            elif self.config['activation'] == 'tanh':
+            elif self.activation == 'tanh':
                 x = torch.tanh(x)
-            elif self.config['activation'] == 'leaky_relu':
+            elif self.activation == 'leaky_relu':
                 x = F.leaky_relu(x, 0.1)
             
             x = self.dropouts[i](x)
@@ -238,6 +298,34 @@ class Dataset(torch.utils.data.Dataset):
     
     def __getitem__(self, idx):
         return self.X[idx], self.Y[idx]
+
+def get_train_val_indices(fold, val_ratio=0.2, random_state=42):
+    """Return dataset indices for train/validation splits without mixing participants."""
+    df = pd.read_csv(META_CSV_PATH)
+    participants = df["patientID"].unique()
+    kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=41)
+
+    for i, (train_idx, test_idx) in enumerate(kf.split(participants)):
+        if i == fold:
+            train_subjects = participants[train_idx]
+            break
+
+    # Ordered list of csv indices for train subjects
+    train_csv_indices = [idx for idx, pid in enumerate(df["patientID"]) if pid in train_subjects]
+
+    # Map dataset index -> participant id
+    groups = {}
+    for ds_idx, csv_idx in enumerate(train_csv_indices):
+        pid = df.loc[csv_idx, "patientID"]
+        groups.setdefault(pid, []).append(ds_idx)
+
+    train_subj, val_subj = train_test_split(
+        list(groups.keys()), test_size=val_ratio, random_state=random_state, shuffle=True
+    )
+
+    train_indices = [idx for s in train_subj for idx in groups[s]]
+    val_indices = [idx for s in val_subj for idx in groups[s]]
+    return train_indices, val_indices
 
 def create_loss_function(loss_type):
     """Create loss function based on type"""
@@ -318,33 +406,48 @@ def evaluate(model, data_loader, criterion, scaler):
     return total_loss, x_nrmse, y_nrmse, z_nrmse
 
 def suggest_architecture(trial):
-    """Suggest architecture hyperparameters with memory safety"""
+    """Suggest architecture hyperparameters with memory safety and smarter size selection"""
     # Number of layers
     n_layers = trial.suggest_int('n_layers', 2, 6)
+    
+    # Calculate maximum layer size that fits within budget
+    max_layer_size = get_max_layer_size_for_budget(n_layers, budget=MAX_PARAMETERS)
+    
+    # Ensure we have a reasonable minimum size
+    min_layer_size = min(32, max_layer_size // 2)
+    
+    # If max_layer_size is too small, reduce number of layers
+    if max_layer_size < 64:
+        n_layers = min(n_layers, 3)
+        max_layer_size = get_max_layer_size_for_budget(n_layers, budget=MAX_PARAMETERS)
+        min_layer_size = min(32, max_layer_size // 2)
+    
+    print(f"    Layer budget: {n_layers} layers, max size: {max_layer_size}, min size: {min_layer_size}")
     
     # Architecture pattern
     pattern = trial.suggest_categorical('arch_pattern', ['decreasing', 'increasing', 'pyramid', 'uniform'])
     
-    # Layer size range
-    min_size = trial.suggest_int('min_layer_size', 512, 2048)
-    max_size = trial.suggest_int('max_layer_size', 2048, 8192)
-    
-    if min_size > max_size:
-        min_size, max_size = max_size, min_size
-    
-    # Generate layer sizes based on pattern
-    if pattern == 'decreasing':
-        sizes = np.linspace(max_size, min_size, n_layers, dtype=int)
-    elif pattern == 'increasing':
-        sizes = np.linspace(min_size, max_size, n_layers, dtype=int)
-    elif pattern == 'pyramid':
-        mid = n_layers // 2
-        up = np.linspace(min_size, max_size, mid + 1, dtype=int)
-        down = np.linspace(max_size, min_size, n_layers - mid, dtype=int)[1:]
-        sizes = np.concatenate([up, down])
-    else:  # uniform
-        size = trial.suggest_int('uniform_size', min_size, max_size)
+    # Generate layer sizes based on pattern with budget constraints
+    if pattern == 'uniform':
+        size = trial.suggest_int('uniform_size', min_layer_size, max_layer_size)
         sizes = np.full(n_layers, size)
+    else:
+        # For non-uniform patterns, suggest min and max within budget
+        pattern_min = trial.suggest_int('pattern_min_size', min_layer_size, max_layer_size)
+        pattern_max = trial.suggest_int('pattern_max_size', min_layer_size, max_layer_size)
+        
+        if pattern_min > pattern_max:
+            pattern_min, pattern_max = pattern_max, pattern_min
+        
+        if pattern == 'decreasing':
+            sizes = np.linspace(pattern_max, pattern_min, n_layers, dtype=int)
+        elif pattern == 'increasing':
+            sizes = np.linspace(pattern_min, pattern_max, n_layers, dtype=int)
+        elif pattern == 'pyramid':
+            mid = n_layers // 2
+            up = np.linspace(pattern_min, pattern_max, mid + 1, dtype=int)
+            down = np.linspace(pattern_max, pattern_min, n_layers - mid, dtype=int)[1:]
+            sizes = np.concatenate([up, down])
     
     # MEMORY SAFETY CHECK: Calculate total parameters
     total_params = calculate_total_parameters(sizes)
@@ -575,14 +678,9 @@ def objective(trial):
             
             # Load full training dataset and split into train/validation
             full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
-            val_ratio = 0.2
-            train_size = int(len(full_dataset) * (1 - val_ratio))
-            val_size = len(full_dataset) - train_size
-            train_dataset, val_dataset = torch.utils.data.random_split(
-                full_dataset,
-                [train_size, val_size],
-                generator=torch.Generator().manual_seed(42)
-            )
+            train_idx, val_idx = get_train_val_indices(fold, val_ratio=0.2, random_state=42)
+            train_dataset = Subset(full_dataset, train_idx)
+            val_dataset = Subset(full_dataset, val_idx)
 
             train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True, drop_last=True)
             val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False)
@@ -706,20 +804,16 @@ def main():
         
         # Prepare training and validation splits
         full_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'train', fold)
-        val_ratio = 0.2
-        train_size = int(len(full_dataset) * (1 - val_ratio))
-        val_size = len(full_dataset) - train_size
-        train_dataset, val_dataset = torch.utils.data.random_split(
-            full_dataset,
-            [train_size, val_size],
-            generator=torch.Generator().manual_seed(42)
-        )
+        train_idx, val_idx = get_train_val_indices(fold, val_ratio=0.2, random_state=42)
+        train_dataset = Subset(full_dataset, train_idx)
+        val_dataset = Subset(full_dataset, val_idx)
 
         test_dataset = Dataset(DATASET_DIR, DATA_TYPE, 'test', fold)
 
-        train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False)
-        test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False)
+        # FIXED: Add drop_last=True to all DataLoaders to prevent BatchNorm issues
+        train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True, drop_last=True)
+        val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False, drop_last=True)
+        test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, drop_last=True)
         
         # Create optimizer and loss
         criterion = create_loss_function(train_config['loss_function'])
@@ -796,14 +890,39 @@ def main():
         writer_train.close()
         writer_test.close()
         
-        # Save model
+        # FIXED: Save model using torch.save instead of torch.jit.script
+        # This avoids the JIT scripting issues with the config dictionary
         model_dir = join(MODELS_DIR, 'final_models')
         ensure_dir(model_dir)
         
         model_path = join(model_dir, f'{DATA_TYPE}_fold_{fold}_optuna_best.pt')
-        torch.jit.script(model).save(model_path)
+        
+        # Save the complete model (includes architecture and weights)
+        torch.save(model, model_path)
+        
+        # Also save just the state dict for easier loading later
+        state_dict_path = join(model_dir, f'{DATA_TYPE}_fold_{fold}_optuna_best_state_dict.pt')
+        torch.save(model.state_dict(), state_dict_path)
+        
+        # Save model configuration for reconstruction
+        config_path = join(model_dir, f'{DATA_TYPE}_fold_{fold}_optuna_best_config.json')
+        model_config = {
+            'architecture': arch_config,
+            'training': train_config,
+            'performance': {
+                'best_val_loss': best_val_loss,
+                'test_loss': test_loss,
+                'test_x_nrmse': test_x_nrmse,
+                'test_y_nrmse': test_y_nrmse,
+                'test_z_nrmse': test_z_nrmse
+            }
+        }
+        with open(config_path, 'w') as f:
+            json.dump(model_config, f, indent=2)
 
         print(f'  Final model saved: {model_path}')
+        print(f'  State dict saved: {state_dict_path}')
+        print(f'  Config saved: {config_path}')
         print(f'  Best validation loss: {best_val_loss:.4f}')
         print(f'  Test loss: {test_loss:.4f} (X:{test_x_nrmse:.4f}, Y:{test_y_nrmse:.4f}, Z:{test_z_nrmse:.4f})')
         
@@ -824,6 +943,12 @@ def main():
     print("\nTo view results:")
     print(f"  optuna-dashboard {storage}")
     print(f"  tensorboard --logdir {LOGS_DIR}")
+    print("\nModel loading example:")
+    print("  # Load complete model:")
+    print(f"  model = torch.load('{join(MODELS_DIR, 'final_models', f'{DATA_TYPE}_fold_0_optuna_best.pt')}')")
+    print("  # Or load state dict:")
+    print("  model = ConfigurableModel(config)")
+    print(f"  model.load_state_dict(torch.load('{join(MODELS_DIR, 'final_models', f'{DATA_TYPE}_fold_0_optuna_best_state_dict.pt')}'))")
 
 if __name__ == "__main__":
     install_requirements()
