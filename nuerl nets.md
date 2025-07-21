@@ -44,6 +44,9 @@ Axis X: mean SD ratio = 0.384
 Axis Y: mean SD ratio = 0.350
 Axis Z: mean SD ratio = 0.607
 
+<img width="1189" height="790" alt="image" src="https://github.com/user-attachments/assets/c344c58f-b34c-422a-aae8-66aed5c45e0b" />
+
+
 ### Training Preformance
 
 
@@ -56,6 +59,8 @@ Axis Z: mean SD ratio = 0.607
 Axis X: mean SD ratio = 0.927
 Axis Y: mean SD ratio = 0.669
 Axis Z: mean SD ratio = 0.532
+
+<img width="1189" height="790" alt="image" src="https://github.com/user-attachments/assets/c28366f8-5edf-4da8-94b6-7ffc83d09a22" />
 
 _____________________________________________________________________________________________________________________________
 
@@ -79,6 +84,9 @@ Axis X: mean SD ratio = 1.175
 Axis Y: mean SD ratio = 0.703
 Axis Z: mean SD ratio = 0.96
 
+<img width="1189" height="790" alt="image" src="https://github.com/user-attachments/assets/414105f1-5758-4aab-82ca-bcb8f60d98b7" />
+
+
 
 # Train Preformance
 
@@ -91,3 +99,6 @@ Axis Z: mean SD ratio = 0.96
 Axis X: mean SD ratio = 1.003
 Axis Y: mean SD ratio = 0.882
 Axis Z: mean SD ratio = 0.849
+
+
+<img width="1189" height="790" alt="image" src="https://github.com/user-attachments/assets/376df450-0aa2-4005-8101-0a7e29e9508a" />
