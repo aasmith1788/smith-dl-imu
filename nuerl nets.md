@@ -47,10 +47,6 @@ Axis Z: mean SD ratio = 0.607
 ### Training Preformance
 
 
-# Dense MLP Training Results (Population Range-based)
-
-## Training Performance Summary (5-fold Cross-Validation)
-
 | Axis | Population Range | Mean Correlation | Correlation Std | Mean Relative RMSE (%) | RMSE Std (%) |
 |------|-----------------|-----------------|----------------|----------------------|---------------|
 | **X** | 75.98° (-67.41° to 8.56°) | 0.937 | 0.066 | 8.03 | 4.09 |
