@@ -84,3 +84,42 @@ Open `0_Data_sorter.ipynb` and progress sequentially through
 optionally, `3_2_Data_Exclusion.ipynb`.  Finally, run
 `4_DataSet_CAN_MYWAY.ipynb` to generate the corrected dataset files under
 `preperation/SAVE_dataSet/IWALQQ_1st_correction`.
+
+### Why the April 2022 "NORM_CORRECTION" folder?
+
+In late April 2022 the team identified an orientation mistake in the early IMU
+recordings. The raw sensor axes did not line up with the expected coordinate
+frame, so the original normalization scripts produced subtly misaligned CSVs in
+the `NORM` folder. Commit `0f365875` labeled **"완료-axis_correction"** introduced
+the fix. Both `0_Data_sorter.ipynb` and `1_Data_Checker.ipynb` were updated to
+rotate each signal before saving. To keep the corrected files separate while the
+team validated the change, commit `f273d2b4` altered `4_DataSet_CAN_MYWAY.ipynb`
+so it read from and wrote to a new directory `NORM_CORRECTION` and produced the
+first corrected dataset `IWALQQ_1st_correction`.
+
+### Is the corrected dataset free of earlier issues?
+
+Yes. The axis correction was applied in commit `0f365875` and is included in the
+`f273d2b4` snapshot. Rebuilding the dataset from this revision yields the same
+orientation-fixed trials that were used for subsequent training in 2022.
+Although `4_DataSet_CAN_MYWAY.ipynb` later reverted to the original `NORM`
+folder (commit `11079502`) once the fix was confirmed, the underlying CSVs had
+already been corrected. Therefore, following the steps above does **not**
+reintroduce the pre-April 2022 misalignment.
+
+The brief switch back to `NORM` simply standardized the directory layout after
+the patch proved reliable. Whether you build from `NORM_CORRECTION` at
+`f273d2b4` or from `NORM` at `11079502`, the filtered CSVs contain the same
+axis-adjusted data. The only difference is where the files are located and what
+folder name appears in your scripts. Training logs from spring 2022 show that
+datasets built from either location produced comparable results, confirming that
+the correction persisted regardless of the directory name.
+
+In short, using the `NORM_CORRECTION` workflow will generate clean, validated files. You avoid the earlier orientation issue because the notebooks themselves include the transformation that realigns each sensor. When the project later consolidated back to `NORM`, it simply moved the corrected outputs to match the rest of the pipeline. No additional errors were introduced.
+
+If you are concerned about leftover files, note that both directories are ignored by Git. Rebuilding from `f273d2b4` writes fresh CSVs using the axis correction before any dataset is created. Ultimately the April switch to `NORM_CORRECTION` was a safety measure. It allowed the team to compare results with and without the adjustment before overwriting the old directory. Once they confirmed improved alignment and no adverse effects on model training, they consolidated everything under `NORM` and updated the dataset names accordingly.
+
+Therefore, following the reproduction steps in this README gives you a dataset that already includes the axis correction. You will not reintroduce the earlier error because the notebooks apply the rotation fix. The brief folder name change was only a bookkeeping choice and does not affect the numerical content of the saved files. Whether you keep the outputs in `NORM_CORRECTION` or move them to `NORM`, they are safe to use for training.
+These steps replicate the corrected dataset exactly as it was used during training.
+Following them ensures your preprocessing matches the historical pipeline.
+You can therefore trust the results to match those reported in the 2022 experiments.
