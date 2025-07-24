@@ -3183,3 +3183,7 @@ With over two hundred revisions, remembering the motivations behind each file be
 ### Reproducing the Documentation Update
 
 Simply pull this commit to read the expanded README. All scripts and notebooks continue to run as described earlier.
+
+## Pre-2025 Processing Summary
+For an explanation of how raw IMU recordings were processed and why some April 2022 commits used the temporary `NORM_CORRECTION` folder, see [PRE2025_PROCESSING_README.md](PRE2025_PROCESSING_README.md).
+
