@@ -68,3 +68,19 @@ Models trained with these datasets write logs under `training/logs/` and checkpo
 ### Reproducing the corrected dataset
 
 To rebuild the files under `NORM_CORRECTION`, check out commit `f273d2b4` and run the preprocessing notebooks in order. Then execute `4_DataSet_CAN_MYWAY.ipynb` from the same commit. The notebook will read `preperation/NORM_CORRECTION` and create `SAVE_dataSet/IWALQQ_1st_correction`.
+
+### Step-by-step commands
+
+```bash
+git checkout f273d2b4
+conda env create -f preperation/buIMU.yml
+conda activate buIMU
+jupyter notebook
+```
+
+Open `0_Data_sorter.ipynb` and progress sequentially through
+`1_Data_Checker.ipynb`, `2_Data_PDFViewNCheck.py`,
+`3_0_Data_filtertoSave.ipynb`, `3_1_Data_timenormalized.ipynb` and,
+optionally, `3_2_Data_Exclusion.ipynb`.  Finally, run
+`4_DataSet_CAN_MYWAY.ipynb` to generate the corrected dataset files under
+`preperation/SAVE_dataSet/IWALQQ_1st_correction`.
