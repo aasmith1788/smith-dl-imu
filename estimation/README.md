@@ -1,38 +1,19 @@
 # Estimation
 
-This folder holds notebooks and scripts used to generate knee angle and moment predictions from the trained networks.
+This folder collects the notebooks and helper scripts for producing knee joint angle and moment predictions from the trained neural networks in this repository. Its two subfolders implement complementary evaluation strategies named sensorwise and notsensor. Understanding how they differ is crucial for reproducing the published results.
 
-## Model overview
+The workflow assumes that models have already been trained using the scripts in `training`. Each network receives inertial measurement unit data along with demographic variables. We provide a kinematic model that estimates knee angles and a kinetic model that predicts flexion and adduction moments. Both share a variational autoencoder that compresses the IMU time series before the main predictor layers. A reference model without the autoencoder offers a baseline. Models are trained with five fold cross validation, and evaluation metrics include relative root mean square error and correlation coefficients.
 
-Two separate models are built from the same IMU and demographic inputs:
+During training the early stopping criterion monitors validation error to prevent overfitting. Once finished, the networks are saved along with scaler objects that rescale predictions back to meaningful units. The estimation notebooks load these artifacts and compute summary metrics for unseen subjects. For the kinetic model, additional statistics for peak and impulse values help quantify how well the network captures the timing and magnitude of key gait events.
 
-1. **Kinematic model** – predicts knee joint angles.
-2. **Kinetic model** – predicts knee moments.
+The project uses preprocessed IMU signals that have been time normalized and stacked per gait cycle. Each sample contains readings from multiple sensors plus a small set of demographic features such as height, weight and walking speed. Target labels correspond to joint angles or moments measured by a motion capture system. During estimation these features are passed through the trained networks to produce predictions in the same units as the original motion capture data.
 
-A variational autoencoder (VAE) is first trained to learn a compact feature space. These VAE embeddings are then passed to fully connected layers to estimate the angles and moments. For comparison, a **reference model** implements only fully connected layers without the VAE stage, following the dense baselines used in previous studies.
+The **sensorwise** folder evaluates each sensor location in isolation. Its notebooks load a trained model, zero out all but one sensor channel, and run predictions for each subject. The resulting errors and correlations are recorded in per subject CSV files. Additional utilities calculate peak detection and impulse metrics or plot individual curves. Because every sensor is tested separately, running these notebooks is computationally demanding, but the detailed outputs reveal which sensors provide the most useful information.
 
-### Reference dense scripts
+The **notsensor** folder does not perform additional inference. Instead it gathers the CSV files produced by the sensorwise notebooks and merges them into consolidated tables. These summaries present the average performance for each sensor and model combination. The notsensor notebooks are light weight and can be rerun quickly to regenerate tables or figures. They guarantee that the aggregated statistics remain consistent with the underlying sensorwise data, because they rely solely on those CSV files.
 
-The code for this reference approach lives under `training/MODEL/torchDense/`. Two
-scripts mirror the VAE workflow but drop the autoencoder step:
+A typical workflow proceeds as follows. First train the kinematic and kinetic models. Next open a sensorwise notebook, such as `makeEstimationwithPDF_wDgMini.ipynb`, and run it to evaluate one sensor at a time for all subjects. After the CSV files appear in `Result_peak` and `Result_impulse`, switch to the notsensor folder and run `maketable.ipynb` to combine the results and calculate overall statistics. Sensorwise processing may require a GPU and several hours, whereas notsensor notebooks finish in minutes on a standard laptop.
 
-- `torch_angleModel.py` – trains a multilayer perceptron to predict joint angles.
-- `torch_momentModel.py` – trains the same network to estimate knee moments.
+While the default sensorwise notebooks evaluate the sensors individually, you can modify them to test custom combinations. By altering the masking step you may examine pairs of sensors or exclude specific locations. Any such experiments will still save their outputs in the same CSV format, allowing the notsensor utilities to aggregate them alongside the standard single-sensor runs.
 
-Both scripts use the same dataset splits and hyperparameters as the VAE version so
-their results provide a direct baseline for comparison.
-
-## Training procedure
-
-All networks are trained with five‑fold cross‑validation. Early stopping monitors the validation error for ten epochs. Performance metrics include relative root‑mean‑square error (rRMSE in %) and correlation coefficients between predicted and reference measurements. For the kinetic model, correlations are also reported for the peak and impulse values of the knee flexion moment (KFM) and knee adduction moment (KAM).
-
-## File layout
-
-- **notsensor/** – Estimation notebooks that operate on the full set of sensors.
-- **sensorwise/** – Utilities for experiments that evaluate each sensor individually.
-
-Refer to the notebooks within these folders for examples of loading trained
-models and creating summary tables. The dense reference model was evaluated
-using the `sensorwise` notebooks, which save per-subject spreadsheets for each
-sensor configuration. The `notsensor` notebooks merely gather those outputs to
-produce the consolidated tables seen in the paper.
+In essence, sensorwise analysis quantifies the value of each individual sensor. Notsensor analysis aggregates those detailed measurements into concise summaries. Together they form a complete evaluation pipeline that connects per sensor insights with the final results shown in the manuscript.
