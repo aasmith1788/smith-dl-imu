@@ -1,6 +1,6 @@
 # Estimation
 
-This folder contains all notebooks for evaluating the trained networks on unseen IMU data. The code is organized into two complementary groups: `sensorwise` and `notsensor`. The former runs inference on one sensor at a time, while the latter collates those results into concise tables.
+This folder contains all notebooks for evaluating the trained networks on unseen IMU data. The code is organized into two complementary groups: `sensorwise` and `notsensor`. The sensorwise notebooks perform intensive inference on one IMU location at a time, whereas the notsensor notebooks simply gather the saved outputs and summarize them.
 
 ## Sensorwise notebooks
 
@@ -15,10 +15,9 @@ Several helper modules under `sensorwise/module/` implement the shared metrics. 
 ## Notsensor notebooks
 
 The notebooks in `notsensor` never run the models themselves. Instead they read the sensorwise outputs and produce overall statistics. The most important file is `maketable.ipynb`, which merges all `.xlsx` files from `Result_peak` and `Result_impulse` to compute the average performance of each sensor location for each model. Other notebooks, like `makeEstimationWithPDF_DenseAngles.ipynb` and `makeEstimationWithPDF_DenseMoments.ipynb`, generate the figures seen in presentations and papers. Because they operate only on stored results, they finish quickly even on a CPU.
+Evaluating a pre-trained model with a standard notebook means loading its checkpoint, setting the mask for the desired sensors, and running inference on every trial. In contrast, the notsensor workflow never reprocesses the raw data. It simply parses the spreadsheets created by the sensorwise notebooks. This separation keeps the heavy GPU inference step distinct from the lightweight aggregation stage so you can regenerate tables or figures in seconds without rerunning the full evaluation.
 
-The sensorwise directory also contains model subfolders such as `wDgModel`, `wDgMiniModel`, and `woDgModel`, which store checkpoints and scalers used by the notebooks. In parallel, the notsensor folder hosts notebooks like `makeEstimationWithPDF_PyramidAttnCNNOPT.ipynb` for experiments with a pyramid attention architecture. Keeping these files together ensures that every summary statistic can be traced back to the specific sensorwise predictions that produced it.
-The subfolder `notsensor/DenseModel/` contains pre-generated outputs for the dense reference networks. You can inspect those results without first running the sensorwise notebooks. The additional `makeEstimationWithPDF_*` notebooks demonstrate alternative architectures or hyperparameters but still rely on the same merging routines.
-
+The sensorwise directory also stores model checkpoints under folders like `wDgModel` and `woDgModel`. The notsensor folder includes auxiliary notebooks, such as `makeEstimationWithPDF_PyramidAttnCNNOPT.ipynb`, and pre-generated dense results in `notsensor/DenseModel`. Keeping the inputs and outputs side by side ensures any summary statistic can be traced back to the original sensorwise predictions.
 ## Example workflow
 
 1. Train the desired model in `training/MODEL/`.
