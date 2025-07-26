@@ -66,7 +66,7 @@ early_stopping_patience = 7 # Increased from 10 for better learning
 early_stopping_min_delta = 0.001  # Minimum change to qualify as improvement
 
 # Learning rate scheduler parameters
-lr_scheduler_patience = 10  # Reduce LR if validation loss doesn't improve for this many epochs
+lr_scheduler_patience = 7 # Reduce LR if validation loss doesn't improve for this many epochs
 lr_scheduler_factor = 0.5   # Factor to reduce learning rate by
 lr_scheduler_min_lr = 1e-7  # Minimum learning rate
 
