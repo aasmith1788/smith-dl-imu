@@ -14,10 +14,11 @@ Several helper modules under `sensorwise/module/` implement the shared metrics. 
 
 ## Notsensor notebooks
 
-The notebooks in `notsensor` never run the models themselves. Instead they read the sensorwise outputs and produce overall statistics. The most important file is `maketable.ipynb`, which merges all `.xlsx` files from `Result_peak` and `Result_impulse` to compute the average performance of each sensor location for each model. Other notebooks, like `makeEstimationWithPDF_DenseAngles.ipynb` and `makeEstimationWithPDF_DenseMoments.ipynb`, generate the figures seen in presentations and papers. Because they operate only on stored results, they finish quickly even on a CPU.
-Evaluating a pre-trained model with a standard notebook means loading its checkpoint, setting the mask for the desired sensors, and running inference on every trial. In contrast, the notsensor workflow never reprocesses the raw data. It simply parses the spreadsheets created by the sensorwise notebooks. This separation keeps the heavy GPU inference step distinct from the lightweight aggregation stage so you can regenerate tables or figures in seconds without rerunning the full evaluation.
+The `notsensor` directory contains two kinds of notebooks. One group, led by `maketable.ipynb` and `maketable_withDecay.ipynb`, does not run the models at all. These notebooks read the spreadsheets created by the sensorwise evaluation and merge them into consolidated tables. They calculate the mean rRMSE and correlation for every sensor and model, producing quick summaries for reports and figures. Because they only parse existing files, they finish in seconds.
 
-The sensorwise directory also stores model checkpoints under folders like `wDgModel` and `woDgModel`. The notsensor folder includes auxiliary notebooks, such as `makeEstimationWithPDF_PyramidAttnCNNOPT.ipynb`, and pre-generated dense results in `notsensor/DenseModel`. Keeping the inputs and outputs side by side ensures any summary statistic can be traced back to the original sensorwise predictions.
+The second group runs inference for baseline or experimental networks using all sensors simultaneously. Notebooks like `makeEstimationWithPDF_PyramidAttnCNNOPT.ipynb` and `makeEstimationWithPDF_DenseAngles.ipynb` load saved checkpoints, execute the model once per trial, and write the predictions to the `DenseModel` subfolder. Their output spreadsheets mirror the sensorwise format so the table scripts can incorporate these additional architectures. Running a single full-sensor configuration is lighter than looping over each placement individually, yet it still requires loading weights and computing predictions.
+
+Overall, notsensor scripts either aggregate existing CSVs or evaluate a full-sensor model. In both cases they rely on the per-sensor results produced by the sensorwise notebooks to maintain consistency across experiments.
 ## Example workflow
 
 1. Train the desired model in `training/MODEL/`.
