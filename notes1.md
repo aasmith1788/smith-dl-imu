@@ -5,7 +5,10 @@
 
 ## **1. Foundations of Convolutional Neural Networks**
 
-**Convolution Operations:** A convolutional neural network (CNN) relies on the mathematical convolution operation to extract localized features from input data. In a 2D convolution, a learnable filter (kernel) of size \$F \times F\$ is slid over the input image or feature map; at each spatial position the dot product between the filter weights and the overlapping input patch is computed to produce one output value. Formally, if \$K\$ is an \$F \times F\$ kernel and \$X\$ is the input, the convolution at position \$(p,q)\$ is \$(K \* X)*{p,q} = \sum*{i=1}^F \sum\_{j=1}^F K\_{i,j},X\_{p+i-1,;q+j-1}\$. Each convolution filter thus produces a **feature map** that preserves the 2D spatial structure of the input but is filtered to detect a specific pattern (e.g. an edge or texture) across the image. Importantly, convolution is a linear operation that *shares* filter parameters across all spatial locations, exploiting spatial stationarity in images (the idea that the same visual pattern might appear anywhere). This weight sharing greatly reduces the number of parameters relative to a fully-connected layer and encodes **translation equivariance** – if an input is shifted, the feature map shifts accordingly, so the network’s perception of a feature is independent of its absolute location. Each convolution’s output is typically passed through a non-linear activation (e.g. ReLU) before feeding into the next layer.
+**Convolution Operations:** A convolutional neural network (CNN) relies on the mathematical convolution operation to extract localized features from input data. In a 2D convolution, a learnable filter (kernel) of size $F \times F$ is slid over the input image or feature map.
+At each spatial position the dot product between the filter weights and the overlapping input patch is computed to produce one output value. Formally, if $K$ is an $F \times F$ kernel and $X$ is the input, the convolution at position $(p,q)$ is
+$$(K * X)_{p,q} = \sum_{i=1}^{F} \sum_{j=1}^{F} K_{i,j} X_{p+i-1,\, q+j-1}.$$
+Each filter thus produces a **feature map** that preserves spatial structure while detecting patterns. Weight sharing reduces parameters and encodes **translation equivariance**. Each convolution's output typically passes through a non-linear activation (e.g. ReLU).
 
 **Receptive Fields and Layer Stacking:** By stacking multiple convolutional layers, CNNs build **hierarchical feature representations**. The *receptive field* of a unit refers to the region of the original input that influences that unit. Convolutional layers increase the receptive field gradually: for example, using a \$3\times3\$ filter, a neuron in the first conv layer “sees” a 3×3 patch of the input; a neuron in the second layer sees a 5×5 region of the original image (since its 3×3 filter receives inputs that each summarize a 3×3 area from layer 1); a third layer with 3×3 filters has a \$7\times7\$ receptive field, and so on. Thus deeper layers capture progressively larger-scale features composed of simpler primitives detected in earlier layers. This mimics the hierarchy observed in visual cortex studies – e.g. Hubel and Wiesel found neurons responding to simple edges which combine into more complex patterns in higher areas. The CNN architecture was indeed inspired by such neuroscience insights: the *Neocognitron* (1980) introduced by Fukushima (a precursor to CNNs) was directly based on Hubel & Wiesel’s concept of simple and complex cells in the cat’s visual cortex. Modern CNNs like LeCun’s *LeNet-5* (1998) and successors harness this hierarchical **feature learning**: early layers often detect edges or Gabor-like primitives, mid-layers detect motifs or parts (e.g. corners, textures), and deeper layers assemble these into high-level concepts (objects or regions). Because of **parameter sharing** and local connectivity, these networks can learn translationally invariant features (e.g. a filter detecting a vertical edge will respond regardless of where that edge is in the image). This invariance is a key advantage of convolution over fully-connected architectures for vision tasks.
 
@@ -287,13 +290,13 @@ They are organized so you can (i) understand and prove the core mathematics, (
 A layer \$\ell\$ receives activations \$\mathbf a^{(\ell)}\in\mathbb R^{d\_\ell}\$ and produces
 \$
 \mathbf z^{(\ell+1)}=\mathbf W^{(\ell)}\mathbf a^{(\ell)}+\mathbf b^{(\ell)},\qquad
-\mathbf a^{(\ell+1)}=\sigma!\bigl(\mathbf z^{(\ell+1)}\bigr)
+\mathbf a^{(\ell+1)}=\sigma\bigl(\mathbf z^{(\ell+1)}\bigr)
 \$
 where \$\sigma(\cdot)\$ is a nonlinear activation.
 
 ### 1.2 Back‑propagation – derivation
 
-Let the scalar loss be \$L\$.  For any weight \$w^{(\ell)}\_{ij}\$ connecting neuron \$i!\to!j\$
+Let the scalar loss be \$L\$.  For any weight \$w^{(\ell)}\_{ij}\$ connecting neuron \$i\toj\$
 
 $$
 \boxed{\ \frac{\partial L}{\partial w^{(\ell)}_{ij}}=\delta^{(\ell+1)}_{j}\;a^{(\ell)}_{i}\ }\tag{1}
@@ -321,14 +324,14 @@ $$
 For 1‑D input \$x\in\mathbb R^{C\times N}\$, kernel \$k\in\mathbb R^{C\times F}\$, stride \$s\$, the convolution output at position \$t\$ is
 
 $$
-y_t \;=\;\sum_{c=1}^{C}\;\sum_{f=0}^{F-1}\;k_{c,f}\;x_{c,\,t+s\!f}.
+y_t \;=\;\sum_{c=1}^{C}\;\sum_{f=0}^{F-1}\;k_{c,f}\;x_{c,\,t+sf}.
 $$
 
 Weight sharing makes \$y\_{t+\Delta}\$ *identical* after an input shift \$\Delta\$ (translation equivariance).
 
 ### 2.2 Parameter count & receptive field
 
-For a 2‑D kernel \$F\times F\$ with \$C\_{\text{in}}!\to!C\_{\text{out}}\$ channels,
+For a 2‑D kernel \$F\times F\$ with \$C\_{\text{in}}\to C\_{\text{out}}\$ channels,
 \$
 \#\text{params}=F^{2},C\_{\text{in}},C\_{\text{out}}+C\_{\text{out}}
 \$.
@@ -345,8 +348,8 @@ Gradient wrt the kernel is another convolution with the **input patch**; gradien
 | Concept                 | Update rule                                                                        | Comments                       |
 | ----------------------- | ---------------------------------------------------------------------------------- | ------------------------------ |
 | **SGD**                 | \$\theta\_{t+1}=\theta\_t-\alpha\_t\nabla\_\theta L\$                              | noisy but cheap                |
-| **Momentum**            | \$v\_{t+1}=\beta v\_t+\nabla\_\theta L,;\theta!\leftarrow!\theta-\alpha v\_{t+1}\$ | smooths oscillations           |
-| **Adam**                | bias‑corrected moments \$m\_t,;v\_t\$ with learning‑rate schedule                  | combines RMSProp + momentum    |
+| **Momentum**            | \$v\_{t+1}=\beta v\_t+\nabla\_\theta L; \theta \leftarrow \theta-\alpha v\_{t+1}\$ | smooths oscillations           |
+| **Adam**                | bias‑corrected moments \$m\_t; v\_t\$ with learning‑rate schedule                  | combines RMSProp + momentum    |
 | **Learning‑rate decay** | \$\alpha\_t=\alpha\_0e^{-kt}\$ (exp) or \$\alpha\_0/(1+kt)\$ (inv)                 | prevents late‑stage divergence |
 
 ### 3.1 Weight initialization (He)
@@ -357,7 +360,7 @@ $$
 \mathrm{Var}[w]=\frac{2}{n_{\text{in}}}
 $$
 
-so that the variance of activations is preserved in expectation (proved by setting \$\operatorname{Var}\[a^{(\ell+1)}]!=!\operatorname{Var}\[a^{(\ell)}]\$ under independence).
+so that the variance of activations is preserved in expectation (proved by setting $\operatorname{Var}[a^{(\ell+1)}] = \operatorname{Var}[a^{(\ell)}]$ under independence).
 
 ---
 
@@ -386,10 +389,10 @@ so that the variance of activations is preserved in expectation (proved by setti
 | ------------------ | -------------------- | --------------------------------------------- |
 | Optimizer          | —                    | SGD, Adam, AdamW, NAdam                       |
 | Learning rate      | \$\alpha\$           | $\[10^{-5},10^{-2}]\$ (log‑scale)             |
-| Batch size         | \$B\$                | \$8!-!512\$ depending on memory               |
-| Dropout prob.      | \$p\_{\text{drop}}\$ | \$0.1!-!0.5\$                                 |
+| Batch size         | \$B\$                | \$8-512\$ depending on memory               |
+| Dropout prob.      | \$p\_{\text{drop}}\$ | \$0.1-0.5\$                                 |
 | Weight‑decay       | \$\lambda\$          | $\[10^{-6},10^{-2}]\$                         |
-| Gradient clip      | \$g\_{\max}\$        | \$1.0!-!10.0\$                                |
+| Gradient clip      | \$g\_{\max}\$        | \$1.0-10.0\$                                |
 | Kernel sizes       | \$F\$                | \${3,5,7}\$                                   |
 | Channels per stage | \$C\$                | geometric progression (e.g. $\[64,128,256]\$) |
 | Attention heads    | \$h\$                | \$4,8,16\$                                    |
@@ -405,7 +408,7 @@ so that the variance of activations is preserved in expectation (proved by setti
 2. **Model design**
 
    * Start small; verify forward & backward pass dimensions.
-   * Keep parameter count below the “rule of thumb” \$N\_{\text{samples}}!\times!10\$ unless heavy regularization is used.
+   * Keep parameter count below the “rule of thumb” \$N\_{\text{samples}} \times 10\$ unless heavy regularization is used.
 3. **Training monitoring**
 
    * Track *both* training and validation metrics every epoch.
