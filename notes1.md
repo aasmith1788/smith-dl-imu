@@ -285,10 +285,10 @@ They are organized so you can (i) understand and prove the core mathematics, (
 ### 1.1 Notation
 
 A layer $\ell$ receives activations $\mathbf a^{(\ell)}\in\mathbb R^{d\_\ell}$ and produces
-$
-\mathbf z^{(\ell+1)}=\mathbf W^{(\ell)}\mathbf a^{(\ell)}+\mathbf b^{(\ell)},\qquad
-\mathbf a^{(\ell+1)}=\sigma!\bigl(\mathbf z^{(\ell+1)}\bigr)
-$
+$$
+\mathbf z^{(\ell+1)} = \mathbf W^{(\ell)} \mathbf a^{(\ell)} + \mathbf b^{(\ell)},\qquad
+\mathbf a^{(\ell+1)} = \sigma\bigl(\mathbf z^{(\ell+1)}\bigr)
+$$
 where $\sigma(\cdot)$ is a nonlinear activation.
 
 ### 1.2 Back‑propagation – derivation
@@ -329,9 +329,10 @@ Weight sharing makes $y\_{t+\Delta}$ *identical* after an input shift $\Delta$
 ### 2.2 Parameter count & receptive field
 
 For a 2‑D kernel $F \times F$ with $C\_{\text{in}}!\to!C\_{\text{out}}$ channels,
-$
-\#\text{params}=F^{2},C\_{\text{in}},C\_{\text{out}}+C\_{\text{out}}
-$.
+
+$$
+\#\text{params}=F^{2}\,C_{\text{in}}\,C_{\text{out}}+C_{\text{out}}
+$$
 Stacking **two** $3 \times 3$ kernels (stride 1) yields an effective $5 \times 5$ receptive field with *fewer* parameters than one $5 \times 5$ kernel – a direct corollary of the above formula.
 
 ### 2.3 Back‑prop through convolution
