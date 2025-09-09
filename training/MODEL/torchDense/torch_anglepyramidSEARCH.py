@@ -671,11 +671,11 @@ def ensemble_evaluation(models, loader, device, scaler, set_name="TEST",
         
         if set_name == "TRAIN" or "TRAINING" in set_name:
             if avg_sd_ratio > 0.9:
-                print("✅ SD ratio > 0.9: Ensemble captures good variance")
+                print("SD ratio > 0.9: Ensemble captures good variance")
             elif avg_sd_ratio > 0.8:
-                print("⚠️  SD ratio 0.8-0.9: Moderate variance capture")
+                print("SD ratio 0.8-0.9: Moderate variance capture")
             else:
-                print("❌ SD ratio < 0.8: Under-dispersed predictions")
+                print("SD ratio < 0.8: Under-dispersed predictions")
     
     results['summary'] = {
         'avg_global_corr': avg_global_corr,
@@ -802,12 +802,12 @@ def check_data_availability():
                 missing_files.append(file_path)
     
     if missing_files:
-        print("❌ Missing required data files:")
+        print("Missing required data files:")
         for file in missing_files:
             print(f"  - {file}")
         raise FileNotFoundError("Please ensure all required data files are present.")
     
-    print("✅ All required data files found!")
+    print("All required data files found!")
 
 
 def train_single_model(fold, seed_idx, seed, train_loader, test_loader,
@@ -908,7 +908,7 @@ def multi_seed_ensemble_training():
         print(f"  Noise STD fraction: {NOISE_STD_FRACTION} (of channel range)")
     print(f"Optimal hyperparameters: {BEST_PARAMS}")
     print("="*80)
-    print("📐  NOTE: All metrics and saved predictions are now in 0-1 "
+    print("NOTE: All metrics and saved predictions are now in 0-1 "
           "normalised space (matches makeEstimationWithPDF notebooks).")
     print("     Expect RMSE ≈ 0.03 → nRMSE ≈ 3 % instead of 0.03 %.")
     
@@ -1092,11 +1092,11 @@ def multi_seed_ensemble_training():
     print(f"  nRMSE gap: {nrmse_gap:.2f}% (test - train)")
     
     if corr_gap < 0.05 and nrmse_gap < 2.0:
-        print("✅ Excellent generalization: minimal train-test gap")
+        print("Excellent generalization: minimal train-test gap")
     elif corr_gap < 0.10 and nrmse_gap < 5.0:
-        print("⚠️  Good generalization: moderate train-test gap")
+        print("Good generalization: moderate train-test gap")
     else:
-        print("❌ Poor generalization: large train-test gap - consider more regularization")
+        print("Poor generalization: large train-test gap - consider more regularization")
     
     # Save overall summary
     summary = {
@@ -1187,7 +1187,7 @@ def retrain_folds(best_params):
         val_loader = DataLoader(val_ds, batch_size=best_params["batch_size"],
                                 shuffle=False, drop_last=False)
         if len(val_loader.dataset) == 0:
-            print(f"⚠️ Fold {fold}: Validation loader is empty!")
+            print(f"Fold {fold}: Validation loader is empty!")
         test_ds = CNNDataset(
             DATASET_DIR, DATA_TYPE, "test", fold,
             apply_noise=False, scaler=scaler
@@ -1205,7 +1205,7 @@ def retrain_folds(best_params):
                 num_heads=best_params.get("num_heads", 4),
             ).to(device)
         except Exception as e:
-            print(f"❌ Error creating model for fold {fold}: {e}")
+            print(f"Error creating model for fold {fold}: {e}")
             raise
 
         criterion = create_loss(best_params["loss"])
@@ -1228,12 +1228,12 @@ def retrain_folds(best_params):
                     device, scaler, best_params["grad_clip"]
                 )
             except Exception as e:
-                print(f"❌ Training error fold {fold} epoch {epoch}: {e}")
+                print(f"Training error fold {fold} epoch {epoch}: {e}")
                 raise
             try:
                 val_loss = evaluate_loss(model, val_loader, criterion, device)
             except Exception as e:
-                print(f"❌ Validation error fold {fold} epoch {epoch}: {e}")
+                print(f"Validation error fold {fold} epoch {epoch}: {e}")
                 raise
 
             writer.add_scalar("train/loss", tr_loss, epoch)

@@ -64,15 +64,15 @@ BEST_PARAMS = {
 }
 
 # Training parameters
-N_FOLDS = 5 # 🧪 TEST MODE: Start with 1 fold for pipeline verification
+N_FOLDS = 5 # TEST MODE: Start with 1 fold for pipeline verification
 ENSEMBLE_EPOCHS = 15
 MAX_PARAMETERS = 500_000
 
-# 🧪 TEST MODE: Single seed for quick validation
+# TEST MODE: Single seed for quick validation
 #_SEEDS = 1  # Test with 1 seed first to verify variance loss effectiveness
 ENSEMBLE_SEEDS = [42]  # Single seed for testing
 
-# 📝 PRODUCTION MODE: Uncomment these lines after testing
+# PRODUCTION MODE: Uncomment these lines after testing
 # N_FOLDS = 5
 N_SEEDS = 3
 ENSEMBLE_SEEDS = [42, 123, 456]
@@ -575,11 +575,11 @@ def ensemble_evaluation(models, loader, device, scaler, set_name="TEST",
         
         if set_name == "TRAIN" or "TRAINING" in set_name:
             if avg_sd_ratio > 0.9:
-                print("✅ SD ratio > 0.9: Ensemble captures excellent variance")
+                print("SD ratio > 0.9: Ensemble captures excellent variance")
             elif avg_sd_ratio > 0.8:
-                print("⚠️  SD ratio 0.8-0.9: Good variance capture")
+                print("SD ratio 0.8-0.9: Good variance capture")
             else:
-                print("🔧 SD ratio < 0.8: Variance loss should help improve this")
+                print("SD ratio < 0.8: Variance loss should help improve this")
     
     results['summary'] = {
         'avg_global_corr': avg_global_corr,
@@ -682,12 +682,12 @@ def check_data_availability():
                 missing_files.append(file_path)
     
     if missing_files:
-        print("❌ Missing required data files:")
+        print("Missing required data files:")
         for file in missing_files:
             print(f"  - {file}")
         raise FileNotFoundError("Please ensure all required data files are present.")
     
-    print("✅ All required data files found!")
+    print("All required data files found!")
 
 
 def train_single_model_with_variance_loss(fold, seed_idx, seed, train_loader, test_loader,
@@ -790,9 +790,9 @@ def multi_seed_ensemble_training_with_variance_loss():
     
     print("="*80)
     print("STEP 3b: MULTI-SEED ENSEMBLE TRAINING WITH VARIANCE ENCOURAGEMENT LOSS")
-    print("🧪 TEST MODE: Running with 1 fold, 1 seed for pipeline verification")
+    print("TEST MODE: Running with 1 fold, 1 seed for pipeline verification")
     print("="*80)
-    print("📐  NOTE: All metrics / files are now in 0-1 normalised space (matching makeEstimationWithPDF notebooks)")
+    print("NOTE: All metrics / files are now in 0-1 normalised space (matching makeEstimationWithPDF notebooks)")
     print(f"Training {N_SEEDS} model(s) per fold with seeds: {ENSEMBLE_SEEDS}")
     print(f"Training for {ENSEMBLE_EPOCHS} epochs per model")
     print(f"Using complete train+val data (no validation split)")
@@ -804,7 +804,7 @@ def multi_seed_ensemble_training_with_variance_loss():
         print(f"  Variance coefficient: {VARIANCE_LOSS_COEFFICIENT} ({VARIANCE_LOSS_COEFFICIENT*100:.1f}% of base loss)")
         print(f"  Variance threshold: {VARIANCE_THRESHOLD} (penalty when pred_spread < {VARIANCE_THRESHOLD*100:.0f}% target_spread)")
         print(f"  Min batch size for variance loss: {MIN_BATCH_SIZE_FOR_VARIANCE}")
-    print("\n🎯 TESTING GOALS:")
+    print("\nTESTING GOALS:")
     print("   1. Verify variance loss improves SD ratio (target: >0.8)")
     print("   2. Ensure nRMSE doesn't inflate significantly")
     print("   3. Validate penalty activates appropriately during training")
@@ -935,11 +935,11 @@ def multi_seed_ensemble_training_with_variance_loss():
         print(f"Test SD ratio: {test_sd_ratio:.3f}")
         
         if train_sd_ratio > 0.85:
-            print("✅ Excellent SD ratio improvement with variance loss!")
+            print("Excellent SD ratio improvement with variance loss!")
         elif train_sd_ratio > 0.80:
-            print("⚠️  Good SD ratio - variance loss helping")
+            print("Good SD ratio - variance loss helping")
         else:
-            print("🔧 SD ratio still low - consider increasing variance coefficient")
+            print("SD ratio still low - consider increasing variance coefficient")
             print(f"   Current coefficient: {VARIANCE_LOSS_COEFFICIENT}")
             print(f"   Suggested: try {VARIANCE_LOSS_COEFFICIENT * 1.5:.3f} to {VARIANCE_LOSS_COEFFICIENT * 2:.3f}")
         
@@ -1039,26 +1039,26 @@ def multi_seed_ensemble_training_with_variance_loss():
     print(f"  nRMSE gap: {nrmse_gap:.2f}% (test - train)")
     print(f"  SD ratio gap: {sd_gap:.3f} (train - test)")
     
-    print(f"\n🎯 VARIANCE LOSS EFFECTIVENESS ASSESSMENT:")
+    print(f"\nVARIANCE LOSS EFFECTIVENESS ASSESSMENT:")
     print(f"{'='*50}")
     if avg_train_sd > 0.85 and avg_test_sd > 0.80:
-        print("✅ EXCELLENT: Variance loss successfully improved SD ratios!")
+        print("EXCELLENT: Variance loss successfully improved SD ratios!")
         print("   Both training and test SD ratios are in excellent range")
     elif avg_train_sd > 0.80:
-        print("⚠️  GOOD: Variance loss helped improve SD ratios")
+        print("GOOD: Variance loss helped improve SD ratios")
         print("   Training SD ratio improved, test may need more data")
     else:
-        print("🔧 MODERATE: Some improvement, but SD ratio still low")
+        print("MODERATE: Some improvement, but SD ratio still low")
         print("   Consider tuning variance loss parameters:")
         print(f"   - Increase coefficient from {VARIANCE_LOSS_COEFFICIENT} to {VARIANCE_LOSS_COEFFICIENT * 1.5:.3f}")
         print(f"   - Or adjust threshold from {VARIANCE_THRESHOLD} to 0.95")
     
     if corr_gap < 0.05 and nrmse_gap < 2.0:
-        print("✅ Excellent generalization: minimal train-test gap")
+        print("Excellent generalization: minimal train-test gap")
     elif corr_gap < 0.10 and nrmse_gap < 5.0:
-        print("⚠️  Good generalization: moderate train-test gap")
+        print("Good generalization: moderate train-test gap")
     else:
-        print("❌ Poor generalization: large train-test gap")
+        print("Poor generalization: large train-test gap")
     
     # Save overall summary
     summary = {
@@ -1110,7 +1110,7 @@ def multi_seed_ensemble_training_with_variance_loss():
     print(f"\n{'='*80}")
     print("VARIANCE ENCOURAGEMENT TEST COMPLETED!")
     print(f"{'='*80}")
-    print(f"🧪 TEST RESULTS FOR FOLD 0:")
+    print(f"TEST RESULTS FOR FOLD 0:")
     print(f"   Training SD ratio: {avg_train_sd:.3f}")
     print(f"   Test SD ratio: {avg_test_sd:.3f}")
     print(f"   Training nRMSE: {avg_train_nrmse:.2f}%")
@@ -1118,20 +1118,20 @@ def multi_seed_ensemble_training_with_variance_loss():
     print()
     
     if avg_train_sd > 0.8:
-        print("✅ SUCCESS: Variance loss improved SD ratio! Ready for full training.")
-        print("📝 NEXT STEPS:")
+        print("SUCCESS: Variance loss improved SD ratio! Ready for full training.")
+        print("NEXT STEPS:")
         print("   1. Uncomment full training parameters in script:")
         print("      N_FOLDS = 5")
         print("      N_SEEDS = 3") 
         print("      ENSEMBLE_SEEDS = [42, 123, 456]")
         print("   2. Re-run script for complete 5-fold 3-seed ensemble")
     elif avg_train_sd > 0.75:
-        print("⚠️  PARTIAL SUCCESS: Some improvement, consider tuning:")
+        print("PARTIAL SUCCESS: Some improvement, consider tuning:")
         print(f"   - Increase VARIANCE_LOSS_COEFFICIENT to {VARIANCE_LOSS_COEFFICIENT * 1.5:.3f}")
         print("   - Or adjust VARIANCE_THRESHOLD to 0.95")
         print("   - Test again before full training")
     else:
-        print("🔧 NEEDS TUNING: SD ratio still low, try:")
+        print("NEEDS TUNING: SD ratio still low, try:")
         print(f"   - Increase VARIANCE_LOSS_COEFFICIENT to {VARIANCE_LOSS_COEFFICIENT * 2:.3f}")
         print("   - Or decrease VARIANCE_THRESHOLD to 0.85")
         print("   - Test with higher penalty before full training")

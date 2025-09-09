@@ -415,11 +415,11 @@ def comprehensive_evaluation(model, loader, device, scaler, set_name="TEST",
         
         if set_name == "TRAIN" or "TRAINING" in set_name:
             if avg_sd_ratio > 0.9:
-                print("✅ SD ratio > 0.9: Model captures good variance")
+                print("SD ratio > 0.9: Model captures good variance")
             elif avg_sd_ratio > 0.8:
-                print("⚠️  SD ratio 0.8-0.9: Moderate variance capture")
+                print("SD ratio 0.8-0.9: Moderate variance capture")
             else:
-                print("❌ SD ratio < 0.8: Under-dispersed predictions")
+                print("SD ratio < 0.8: Under-dispersed predictions")
     
     results['summary'] = {
         'avg_global_corr': avg_global_corr,
@@ -510,12 +510,12 @@ def check_data_availability():
                 missing_files.append(file_path)
     
     if missing_files:
-        print("❌ Missing required data files:")
+        print("Missing required data files:")
         for file in missing_files:
             print(f"  - {file}")
         raise FileNotFoundError("Please ensure all required data files are present.")
     
-    print("✅ All required data files found!")
+    print("All required data files found!")
 
 
 def full_retrain():
