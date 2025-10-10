@@ -454,10 +454,10 @@ def suggest_architecture(trial):
     print(f"    Checking architecture {sizes.tolist()}: {total_params:,} parameters")
     
     if total_params > MAX_PARAMETERS:
-        print(f"    ❌ Architecture exceeds {MAX_PARAMETERS:,} parameter limit, pruning trial")
+        print(f"    Architecture exceeds {MAX_PARAMETERS:,} parameter limit, pruning trial")
         raise optuna.exceptions.TrialPruned()
     
-    print(f"    ✅ Architecture within memory limits")
+    print(f"    Architecture within memory limits")
     
     # Dropout rates
     dropout_rates = []
@@ -635,7 +635,7 @@ def train_and_evaluate(model, train_loader, val_loader, criterion, optimizer, sc
             overfitting_gap = train_loss - val_loss
             print(f'  Overfitting Gap: {overfitting_gap:.4f}')
             if overfitting_gap > 0.02:
-                print(f'  ⚠️  WARNING: Potential overfitting detected!')
+                print(f'  WARNING: Potential overfitting detected!')
     
     # Restore best model
     if best_model_state:

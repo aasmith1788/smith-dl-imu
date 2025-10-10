@@ -672,11 +672,11 @@ def search_optimal_noise_level():
             markers.append("Val Loss")
         marker_str = ", ".join(markers) if markers else ""
         if markers:
-            marker_str = f"✅ {marker_str}"
+            marker_str = f"{marker_str}"
         
         print(f"{noise_level:<8.3f} {val_loss:.4f}±{val_std:.4f}  {train_loss:.4f}±{train_std:.4f}  {gap:.4f}±{gap_std:.4f}  {marker_str}")
     
-    print(f"\n🎯 RECOMMENDATIONS:")
+    print(f"\nRECOMMENDATIONS:")
     print(f"   Best Generalization (smallest gap): {best_global_gap_noise:.3f}")
     gap_perf = noise_level_summary[best_global_gap_noise]
     print(f"      Average gap: {gap_perf['avg_gap_across_folds']:.4f}±{gap_perf['std_gap_across_folds']:.4f}")
@@ -690,7 +690,7 @@ def search_optimal_noise_level():
     # Decide which to recommend
     if best_global_gap_noise == best_global_val_noise:
         recommended_noise = best_global_gap_noise
-        print(f"\n🏆 FINAL RECOMMENDATION: {recommended_noise:.3f}")
+        print(f"\nFINAL RECOMMENDATION: {recommended_noise:.3f}")
         print("   This noise level optimizes both generalization and validation performance!")
     else:
         # Check if gap difference is significant
@@ -699,15 +699,15 @@ def search_optimal_noise_level():
         
         if abs(gap_diff) < 0.001:  # Very small gap difference
             recommended_noise = best_global_val_noise
-            print(f"\n🏆 FINAL RECOMMENDATION: {recommended_noise:.3f}")
+            print(f"\nFINAL RECOMMENDATION: {recommended_noise:.3f}")
             print("   Gap difference is minimal, choosing best validation loss.")
         elif abs(val_diff) < 0.001:  # Very small validation difference  
             recommended_noise = best_global_gap_noise
-            print(f"\n🏆 FINAL RECOMMENDATION: {recommended_noise:.3f}")
+            print(f"\nFINAL RECOMMENDATION: {recommended_noise:.3f}")
             print("   Validation loss difference is minimal, choosing best generalization.")
         else:
             recommended_noise = best_global_gap_noise  # Prefer generalization
-            print(f"\n🏆 FINAL RECOMMENDATION: {recommended_noise:.3f}")
+            print(f"\nFINAL RECOMMENDATION: {recommended_noise:.3f}")
             print("   Prioritizing generalization (smallest train-val gap) over absolute performance.")
     
     # Save comprehensive summary
@@ -749,7 +749,7 @@ def search_optimal_noise_level():
         ms_perf = noise_level_summary[0.075]
         print(f"   0.075 performance: Val={ms_perf['avg_val_loss_across_folds']:.4f}, Gap={ms_perf['avg_gap_across_folds']:.4f}")
         if recommended_noise == 0.075:
-            print("   ✅ Same optimal noise level as MultiScaleCNN - good transfer!")
+            print("   Same optimal noise level as MultiScaleCNN - good transfer!")
         else:
             print(f"   PyramidAttnCNN prefers {recommended_noise:.3f} vs MultiScaleCNN's 0.075")
     
@@ -790,12 +790,12 @@ def check_data_availability():
                 missing_files.append(file_path)
                 
     if missing_files:
-        print("❌ Missing files:")
+        print("Missing files:")
         for file_path in missing_files:
             print(f"  - {file_path}")
         raise FileNotFoundError("Some required data files are missing")
     
-    print("✅ All required data files found!")
+    print("All required data files found!")
 
 
 # ------------------------------
@@ -810,10 +810,10 @@ if __name__ == "__main__":
     # Run the noise level search
     try:
         optimal_noise, search_results = search_optimal_noise_level()
-        print(f"\n🎉 SUCCESS! Optimal noise level found for PyramidAttnCNN: {optimal_noise:.3f}")
+        print(f"\nSUCCESS! Optimal noise level found for PyramidAttnCNN: {optimal_noise:.3f}")
         
     except Exception as e:
-        print(f"\n❌ ERROR during noise search: {str(e)}")
+        print(f"\nERROR during noise search: {str(e)}")
         import traceback
         traceback.print_exc()
         raise

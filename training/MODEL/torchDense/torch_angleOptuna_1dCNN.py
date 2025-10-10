@@ -387,12 +387,12 @@ def check_data_availability():
                 missing_files.append(file_path)
     
     if missing_files:
-        print("❌ Missing required data files:")
+        print("Missing required data files:")
         for file in missing_files:
             print(f"  - {file}")
         raise FileNotFoundError("Please ensure all required data files are present.")
     
-    print("✅ All required data files found!")
+    print("All required data files found!")
     
     # List available files for verification
     print("Available files in dataset directory:")
