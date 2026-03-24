@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -c \"\npath = 'C:/Users/aasmi/smith-dl-imu/estimation/notsensor/makeEstimationWithPDF_PyramidAttnCNN_RESIDUAL_v3.ipynb'\nwith open\\(path, 'rb'\\) as f:\n    raw = f.read\\(\\)\n# Find the bytes around 'Training range'\nidx = raw.find\\(b'Training range:'\\)\nif idx >= 0:\n    print\\(repr\\(raw[idx:idx+80]\\)\\)\nidx2 = raw.find\\(b'GlobRMSE'\\)\nif idx2 >= 0:\n    print\\(repr\\(raw[idx2:idx2+40]\\)\\)\nidx3 = raw.find\\(b'global_rmse='\\)\nif idx3 >= 0:\n    print\\(repr\\(raw[idx3:idx3+60]\\)\\)\n\")",
+      "Bash(py -c \"\npath = 'C:/Users/aasmi/smith-dl-imu/estimation/notsensor/makeEstimationWithPDF_PyramidAttnCNN_RESIDUAL_v3.ipynb'\nwith open\\(path, 'rb'\\) as f:\n    raw = f.read\\(\\)\nidx = raw.find\\(b'train_range:.2f'\\)\nif idx >= 0:\n    print\\(repr\\(raw[idx-30:idx+80]\\)\\)\nidx2 = raw.find\\(b'GlobRMSE'\\)\nif idx2 >= 0:\n    print\\(repr\\(raw[idx2:idx2+50]\\)\\)\nidx3 = raw.find\\(b'global_rmse='\\)\nif idx3 >= 0:\n    # find the one with macro_rmse\n    while idx3 >= 0:\n        chunk = raw[idx3:idx3+70]\n        if b'macro' in chunk:\n            print\\(repr\\(chunk\\)\\)\n            break\n        idx3 = raw.find\\(b'global_rmse=', idx3+1\\)\n\")",
+      "Bash(py C:/Users/aasmi/smith-dl-imu/Notes/fix_nb_units.py)",
+      "Bash(py -c \"\nimport json, sys\nsys.stdout.reconfigure\\(encoding='utf-8'\\)\nwith open\\('C:/Users/aasmi/smith-dl-imu/estimation/notsensor/makeEstimationWithPDF_PyramidAttnCNN_RESIDUAL_angles.ipynb', encoding='utf-8'\\) as f:\n    nb = json.load\\(f\\)\n# Find cells with DATA_TYPE, naive_baseline, paths\nfor i, cell in enumerate\\(nb['cells']\\):\n    src = ''.join\\(cell.get\\('source', []\\)\\)\n    if any\\(k in src for k in ['DATA_TYPE', 'naive_baseline', 'DATASET_NAME', 'OUTPUT_DIR', 'baseline_evaluate']\\):\n        print\\(f'=== Cell {i} \\(id={cell.get\\(\\\\\"id\\\\\"\\)}\\) ==='\\)\n        print\\(src[:800]\\)\n        print\\(\\)\n\" 2>&1 | head -200)",
+      "Bash(py:*)"
+    ]
+  }
+}
