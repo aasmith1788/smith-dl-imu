@@ -1,0 +1,1 @@
+The dataset list was trimmed from 877 to 876 entries after one trial was excluded during data cleanup. Commit 6e6cf8e (April 29, 2022) flagged `P229,100620,fw,0008,nonleg,1` as unusable, and commit bea1d4f (June 28, 2022) deleted this row from `list_dataset_correction.xlsx`. Subsequent runs of `4_DataSet_CAN_MYWAY.ipynb` therefore report the lower count.
